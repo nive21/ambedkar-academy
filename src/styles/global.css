@@ -816,3 +816,121 @@ body {
     letter-spacing: 0.4px;
   }
 }
+
+.objectives-section {
+  background: #362a20;
+  color: #f1ede4;
+  padding: clamp(64px, 8vw, 88px) 0 clamp(64px, 7vw, 80px);
+}
+
+.objectives-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 14vw, 178px);
+  position: relative;
+}
+
+.objectives-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(48px, 5.6vw, 72px);
+  color: #676f9c;
+  letter-spacing: -0.02em;
+  line-height: 0.86;
+  margin-bottom: 60px;
+}
+
+.objectives-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+
+.objectives-table::before,
+.objectives-table::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(241, 237, 228, 0.15);
+}
+
+.objectives-table::before { left: 92px; }
+.objectives-table::after { left: 240px; }
+
+.objectives-row {
+  display: grid;
+  grid-template-columns: 60px 124px 1fr;
+  gap: 0 32px;
+  align-items: end;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(241, 237, 228, 0.15);
+}
+
+.objectives-row:last-child {
+  border-bottom: none;
+}
+
+.objectives-num {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(48px, 5.6vw, 72px);
+  color: #676f9c;
+  letter-spacing: -0.04em;
+  line-height: 0.84;
+  text-align: right;
+  user-select: none;
+}
+
+.objectives-category {
+  font-family: 'Special Elite', cursive;
+  font-size: 14px;
+  color: #f1ede4;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  padding-left: 8px;
+}
+
+.objectives-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #f1ede4;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+
+.objectives-rule {
+  height: 1px;
+  background: rgba(241, 237, 228, 0.15);
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .objectives-table::before,
+  .objectives-table::after {
+    display: none;
+  }
+
+  .objectives-row {
+    grid-template-columns: 48px 100px 1fr;
+    gap: 0 16px;
+  }
+
+  .objectives-num {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  .objectives-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 16px 0;
+  }
+
+  .objectives-num {
+    font-size: 36px;
+    text-align: left;
+  }
+}
