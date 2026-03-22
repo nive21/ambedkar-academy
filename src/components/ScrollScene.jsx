@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Navbar from './Navbar.jsx';
@@ -8,6 +8,78 @@ import SectionBlock from './SectionBlock.jsx';
 import { splitBodyLines, splitHeading } from '../utils/textSplit.js';
 
 const SCROLL_THRESHOLD = 55;
+const ANIM_SPEED = 1.5;
+const TIMING = {
+  textMissionOut: 0.24 * ANIM_SPEED,
+  textMissionLinesOut: 0.22 * ANIM_SPEED,
+  textVisionOut: 0.34 * ANIM_SPEED,
+  textVisionLinesOut: 0.3 * ANIM_SPEED,
+  textIn: 0.32 * ANIM_SPEED,
+  textLinesIn: 0.3 * ANIM_SPEED,
+  tabs: 0.2 * ANIM_SPEED
+};
+
+const TAB_CONFIG = [
+  {
+    id: 'history',
+    label: 'History',
+    pages: [
+      {
+        left: {
+          title: 'About<br />Dr.&nbsp;Ambedkar<br />Academy',
+          body: ''
+        },
+        right: {
+          title: "'70s",
+          body:
+            "The People's Educational Trust – Dr. Ambedkar Academy is a unique organisation with the privilege of serving marginalised people for over 45 years. It blossomed from informal monthly gatherings of socially conscious intellectuals way back in the 1970s to discuss and deliberate on issues concerning the development of marginalised people."
+        }
+      },
+      {
+        left: {
+          title: 'Feb 1976',
+          body: 'A turning point that established a lasting commitment to inclusive education.'
+        },
+        right: {
+          title: 'Jan 1996',
+          body: 'A decade of community programs expanded access and deepened impact across the region.'
+        }
+      }
+    ]
+  },
+  {
+    id: 'impact',
+    label: 'Impact',
+    pages: [
+      {
+        left: {
+          title: 'Impact 1',
+          body: 'Scholarships, mentorship, and support programs that opened doors.'
+        },
+        right: {
+          title: 'Impact 2',
+          body: 'Grassroots initiatives that strengthened families and local economies.'
+        }
+      }
+    ]
+  },
+  {
+    id: 'members',
+    label: 'Members',
+    pages: [
+      {
+        left: {
+          title: 'Members',
+          body: 'A community of educators, advocates, and volunteers.'
+        },
+        right: {
+          title: 'Join Us',
+          body: 'Contribute your time, expertise, or support to extend our mission.'
+        }
+      }
+    ]
+  }
+];
 
 export default function ScrollScene() {
   const rootRef = useRef(null);
@@ -20,10 +92,15 @@ export default function ScrollScene() {
   const closedBookRef = useRef(null);
   const flipPanelRef = useRef(null);
   const openBookRef = useRef(null);
+  const leftHalfRef = useRef(null);
   const visionLinesRef = useRef([]);
   const missionLinesRef = useRef([]);
   const textTimelineRef = useRef(null);
+  const closeTimeoutRef = useRef(null);
   const bookStateRef = useRef('closed');
+  const [activeTab, setActiveTab] = useState('history');
+  const [pageIndex, setPageIndex] = useState(0);
+  const [isLeftHalfVisible, setIsLeftHalfVisible] = useState(false);
 
   const setClosedVisible = (visible) => {
     if (!closedBookRef.current) return;
@@ -33,14 +110,24 @@ export default function ScrollScene() {
 
   const setOpenVisible = (visible) => {
     if (!openBookRef.current) return;
+
     openBookRef.current.classList.toggle('book-visible', visible);
-    rootRef.current?.classList.toggle('book-open-bg', visible);
+    document.body.classList.toggle('book-open-bg', visible);
+  };
+
+  const setLeftHalfVisible = (visible) => {
+    setIsLeftHalfVisible(visible);
   };
 
   const setOpenState = (state) => {
     if (!openBookRef.current) return;
     openBookRef.current.classList.toggle('is-opening', state === 'opening');
     openBookRef.current.classList.toggle('is-closing', state === 'closing');
+  };
+
+  const setTabsVisible = (visible) => {
+    if (!openBookRef.current) return;
+    openBookRef.current.classList.toggle('tabs-visible', visible);
   };
 
   const setShifted = (shifted) => {
@@ -60,11 +147,15 @@ export default function ScrollScene() {
       requestAnimationFrame(() => {
         panel.style.animation = '';
         panel.classList.add(animClass);
-        panel.addEventListener('animationend', () => {
-          panel.style.display = 'none';
-          panel.classList.remove(animClass);
-          onDone?.();
-        }, { once: true });
+        panel.addEventListener(
+          'animationend',
+          () => {
+            panel.style.display = 'none';
+            panel.classList.remove(animClass);
+            onDone?.();
+          },
+          { once: true }
+        );
       });
     });
   };
@@ -75,33 +166,35 @@ export default function ScrollScene() {
     const missionChars = rootRef.current?.querySelectorAll('#missionHeading .char') || [];
 
     const tl = gsap.timeline({ onComplete: onDone });
-    tl.to(visionChars, {
-      y: '-186%',
-      stagger: 0.022,
-      ease: 'power3.inOut',
-      duration: 0.42
-    }, 0.04);
-
     tl.to(missionChars, {
       y: '-186%',
-      stagger: 0.022,
-      ease: 'power3.inOut',
-      duration: 0.42
-    }, 0.10);
-
-    tl.to(visionLinesRef.current, {
-      y: '-150%',
-      stagger: 0.038,
-      ease: 'power2.inOut',
-      duration: 0.38
-    }, 0.30);
+      stagger: 0.02,
+      ease: 'power2.in',
+      duration: TIMING.textMissionOut
+    }, 0.02);
 
     tl.to(missionLinesRef.current, {
       y: '-150%',
-      stagger: 0.038,
-      ease: 'power2.inOut',
-      duration: 0.38
-    }, 0.38);
+      stagger: 0.03,
+      ease: 'power2.in',
+      duration: TIMING.textMissionLinesOut
+    }, 0.08);
+
+    tl.call(() => setShifted(true), null, 0.26);
+
+    tl.to(visionChars, {
+      y: '-186%',
+      stagger: 0.02,
+      ease: 'power2.in',
+      duration: TIMING.textVisionOut
+    }, 0.14);
+
+    tl.to(visionLinesRef.current, {
+      y: '-150%',
+      stagger: 0.03,
+      ease: 'power2.in',
+      duration: TIMING.textVisionLinesOut
+    }, 0.22);
 
     textTimelineRef.current = tl;
   };
@@ -115,44 +208,54 @@ export default function ScrollScene() {
     tl.to(visionChars, {
       y: '0%',
       stagger: 0.02,
-      ease: 'power3.inOut',
-      duration: 0.32
+      ease: 'power2.out',
+      duration: TIMING.textIn
     }, 0);
 
     tl.to(missionChars, {
       y: '0%',
       stagger: 0.02,
-      ease: 'power3.inOut',
-      duration: 0.32
+      ease: 'power2.out',
+      duration: TIMING.textIn
     }, 0.06);
 
     tl.to(visionLinesRef.current, {
       y: '0%',
       stagger: 0.03,
-      ease: 'power2.inOut',
-      duration: 0.3
+      ease: 'power2.out',
+      duration: TIMING.textLinesIn
     }, 0.12);
 
     tl.to(missionLinesRef.current, {
       y: '0%',
       stagger: 0.03,
-      ease: 'power2.inOut',
-      duration: 0.3
+      ease: 'power2.out',
+      duration: TIMING.textLinesIn
     }, 0.18);
 
     textTimelineRef.current = tl;
   };
 
+  const cancelCloseTimer = () => {
+    if (closeTimeoutRef.current) {
+      closeTimeoutRef.current.kill();
+      closeTimeoutRef.current = null;
+    }
+  };
+
   const doOpen = () => {
     if (bookStateRef.current !== 'closed') return;
     bookStateRef.current = 'opening';
-    setShifted(true);
+    cancelCloseTimer();
     animateTextOut(() => {
       setClosedVisible(false);
       setOpenVisible(true);
+      setLeftHalfVisible(true);
       setOpenState('opening');
       launchFlip('do-open', 0, () => {
         setOpenState('open');
+        setTabsVisible(true);
+        setLeftHalfVisible(true);
         bookStateRef.current = 'open';
       });
     });
@@ -162,13 +265,18 @@ export default function ScrollScene() {
     if (bookStateRef.current !== 'open') return;
     bookStateRef.current = 'closing';
     setOpenState('closing');
-    launchFlip('do-close', -180, () => {
-      setOpenVisible(false);
-      setClosedVisible(true);
-      setShifted(false);
-      setOpenState('closed');
-      animateTextIn(() => {
-        bookStateRef.current = 'closed';
+    setTabsVisible(false);
+    cancelCloseTimer();
+    closeTimeoutRef.current = gsap.delayedCall(TIMING.tabs, () => {
+      setLeftHalfVisible(false);
+      launchFlip('do-close', -180, () => {
+        setOpenVisible(false);
+        setClosedVisible(true);
+        setShifted(false);
+        setOpenState('closed');
+        animateTextIn(() => {
+          bookStateRef.current = 'closed';
+        });
       });
     });
   };
@@ -210,35 +318,35 @@ export default function ScrollScene() {
           x: () => W() * 1.1,
           scaleX: 0.3,
           transformOrigin: 'left center',
-          ease: 'none'
+          ease: 'power2.in'
         }, 0);
 
         lineTl.to('#svgLineBottom', {
           x: () => -W() * 1.1,
           scaleX: 0.3,
           transformOrigin: 'right center',
-          ease: 'none'
+          ease: 'power2.in'
         }, 0);
 
         lineTl.to('#svgLineCenter', {
           x: () => -W() * 0.4,
           scaleX: 0.2,
           transformOrigin: 'left center',
-          ease: 'none'
+          ease: 'power2.in'
         }, 0);
 
         lineTl.to('#svgLineLeftWrap', {
           y: () => H() * 1.2,
           scaleY: 0.1,
           transformOrigin: 'center top',
-          ease: 'none'
+          ease: 'power2.in'
         }, 0);
 
         lineTl.to('#svgLineRightWrap', {
           y: () => -H() * 1.2,
           scaleY: 0.1,
           transformOrigin: 'center bottom',
-          ease: 'none'
+          ease: 'power2.in'
         }, 0);
 
         ScrollTrigger.create({
@@ -294,9 +402,59 @@ export default function ScrollScene() {
     return () => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('scroll', onScroll);
+      cancelCloseTimer();
       ctx?.revert();
     };
   }, []);
+
+  const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) ?? TAB_CONFIG[0];
+  const activePages = activeTabConfig.pages;
+  const currentPage = activePages[pageIndex] ?? activePages[0];
+  const showPrev = !(activeTab === 'history' && pageIndex === 0);
+  const showNext =
+    pageIndex < activePages.length - 1 ||
+    (activeTab === 'history' && pageIndex === activePages.length - 1) ||
+    (activeTab === 'impact' && pageIndex === activePages.length - 1) ||
+    (activeTab === 'members' && pageIndex === activePages.length - 1);
+
+  const handleNext = (event) => {
+    event?.stopPropagation?.();
+    if (pageIndex < activePages.length - 1) {
+      setPageIndex((prev) => prev + 1);
+      return;
+    }
+
+    if (activeTab === 'history') {
+      setActiveTab('impact');
+      setPageIndex(0);
+    } else if (activeTab === 'impact') {
+      setActiveTab('members');
+      setPageIndex(0);
+    }
+  };
+
+  const handlePrev = (event) => {
+    event?.stopPropagation?.();
+    if (pageIndex > 0) {
+      setPageIndex((prev) => prev - 1);
+      return;
+    }
+
+    if (activeTab === 'impact') {
+      setActiveTab('history');
+      setPageIndex(TAB_CONFIG[0].pages.length - 1);
+    } else if (activeTab === 'members') {
+      setActiveTab('impact');
+      setPageIndex(TAB_CONFIG[1].pages.length - 1);
+    }
+  };
+
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    setPageIndex(0);
+  };
+
+  const allowCloseOnLeft = activeTab === 'history' && pageIndex === 0;
 
   return (
     <div className="scroll-container" ref={rootRef}>
@@ -308,9 +466,21 @@ export default function ScrollScene() {
           closedBookRef={closedBookRef}
           flipPanelRef={flipPanelRef}
           openBookRef={openBookRef}
+          leftHalfRef={leftHalfRef}
+          leftHalfVisible={isLeftHalfVisible}
           onClosedClick={doOpen}
           onLeftPageClick={doClose}
           onRightCoverClick={doClose}
+          leftPage={currentPage.left}
+          rightPage={currentPage.right}
+          showPrev={showPrev}
+          showNext={showNext}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          tabs={TAB_CONFIG}
+          activeTab={activeTab}
+          onTabClick={handleTabClick}
+          allowCloseOnLeft={allowCloseOnLeft}
         />
         <SectionBlock
           className="vision-block"

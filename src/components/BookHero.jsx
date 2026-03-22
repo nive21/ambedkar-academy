@@ -8,9 +8,21 @@ export default function BookHero({
   closedBookRef,
   flipPanelRef,
   openBookRef,
+  leftHalfRef,
+  leftHalfVisible,
   onClosedClick,
   onLeftPageClick,
-  onRightCoverClick
+  onRightCoverClick,
+  leftPage,
+  rightPage,
+  showPrev,
+  showNext,
+  onPrev,
+  onNext,
+  tabs,
+  activeTab,
+  onTabClick,
+  allowCloseOnLeft
 }) {
   return (
     <div className="book-wrap" ref={wrapperRef}>
@@ -30,19 +42,38 @@ export default function BookHero({
         </div>
 
         <div className="open-book" ref={openBookRef}>
-          <div className="left-half" onClick={onLeftPageClick}>
+          <div
+            className={`left-half ${leftHalfVisible ? 'left-half-visible' : ''} ${allowCloseOnLeft ? 'is-closable' : 'is-prev-only'}`}
+            ref={leftHalfRef}
+            onClick={allowCloseOnLeft ? onLeftPageClick : undefined}
+          >
             <div className="left-cover">
               <img src={insideLeftCover} alt="" />
             </div>
             <div className="left-page" />
             <div className="left-content">
-              <h1>About<br />Dr.&nbsp;Ambedkar<br />Academy</h1>
-              <p className="close-hint">← click to close</p>
+              <h1 dangerouslySetInnerHTML={{ __html: leftPage.title }} />
+              {leftPage.body ? <p className="left-body">{leftPage.body}</p> : null}
+              {showPrev ? (
+                <button
+                  type="button"
+                  className="prev-btn"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onPrev?.();
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#4c2c1b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 5 5 12 12 19" />
+                  </svg>
+                </button>
+              ) : null}
+              {allowCloseOnLeft ? <p className="close-hint">← click to close</p> : null}
             </div>
           </div>
 
-          <div className="spine">
-          </div>
+          <div className="spine" />
 
           <div className="right-cover" onClick={onRightCoverClick}>
             <img src={insideRightCover} alt="" />
@@ -51,27 +82,29 @@ export default function BookHero({
           <div className="right-page" />
 
           <div className="right-content">
-            <div className="year-display">'70s</div>
-            <p className="description">
-              The People's Educational Trust – Dr. Ambedkar Academy is a unique
-              organisation with the privilege of serving marginalised people for
-              over 45 years. It blossomed from informal monthly gatherings of
-              socially conscious intellectuals way back in the 1970s to discuss
-              and deliberate on issues concerning the development of marginalised
-              people.
-            </p>
-            <div className="next-btn" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#4c2c1b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </div>
+            <div className="year-display">{rightPage.title}</div>
+            <p className="description">{rightPage.body}</p>
+            {showNext ? (
+              <button type="button" className="next-btn" onClick={onNext}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#4c2c1b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </button>
+            ) : null}
           </div>
 
           <div className="tabs">
-            <div className="tab"><span className="tab-inner">History</span></div>
-            <div className="tab"><span className="tab-inner">Impact</span></div>
-            <div className="tab"><span className="tab-inner">Members</span></div>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`tab ${activeTab === tab.id ? 'is-selected' : ''}`}
+                onClick={() => onTabClick?.(tab.id)}
+              >
+                <span className="tab-inner">{tab.label}</span>
+              </button>
+            ))}
           </div>
 
           <div className="book-shadow" />
