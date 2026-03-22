@@ -127,7 +127,7 @@ body {
 }
 
 #svgLineCenter {
-  top: calc(60% + 30px);
+  top: calc(60%);
   left: -67px;
   width: 491px;
   height: 2px;
@@ -223,6 +223,31 @@ body {
   animation: pulse 2s ease-in-out infinite;
 }
 
+.click-close {
+  position: absolute;
+  bottom: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(76, 44, 27, 0.45);
+  font-family: 'Cutive Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.open-book.book-visible ~ .click-close {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 0.85; }
@@ -313,6 +338,12 @@ body {
 .open-book.book-visible {
   opacity: 1;
   pointer-events: auto;
+}
+
+.open-book.is-closing {
+  z-index: 0;
+  pointer-events: none;
+  transition: none;
 }
 
 .open-book.is-opening .left-half {

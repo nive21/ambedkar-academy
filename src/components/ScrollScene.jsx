@@ -96,6 +96,7 @@ export default function ScrollScene() {
   const visionLinesRef = useRef([]);
   const missionLinesRef = useRef([]);
   const textTimelineRef = useRef(null);
+  const lineTweenRef = useRef(null);
   const closeTimeoutRef = useRef(null);
   const bookStateRef = useRef('closed');
   const [activeTab, setActiveTab] = useState('history');
@@ -111,6 +112,7 @@ export default function ScrollScene() {
   const setOpenVisible = (visible) => {
     if (!openBookRef.current) return;
 
+    openBookRef.current.style.display = visible ? 'block' : 'none';
     openBookRef.current.classList.toggle('book-visible', visible);
     document.body.classList.toggle('book-open-bg', visible);
   };
@@ -158,6 +160,102 @@ export default function ScrollScene() {
         );
       });
     });
+  };
+
+  const animateLinesOut = (onDone) => {
+    lineTweenRef.current?.kill();
+    const W = () => window.innerWidth;
+    const H = () => window.innerHeight;
+    const tl = gsap.timeline({ onComplete: onDone });
+
+    tl.to('#svgLineTop', {
+      x: () => W() * 1.1,
+      scaleX: 0.3,
+      transformOrigin: 'left center',
+      ease: 'power2.in',
+      duration: 0.28 * ANIM_SPEED
+    }, 0);
+
+    tl.to('#svgLineBottom', {
+      x: () => -W() * 1.1,
+      scaleX: 0.3,
+      transformOrigin: 'right center',
+      ease: 'power2.in',
+      duration: 0.28 * ANIM_SPEED
+    }, 0);
+
+    tl.to('#svgLineCenter', {
+      x: () => -W() * 0.4,
+      scaleX: 0.2,
+      transformOrigin: 'left center',
+      ease: 'power2.in',
+      duration: 0.28 * ANIM_SPEED
+    }, 0);
+
+    tl.to('#svgLineLeftWrap', {
+      y: () => H() * 1.2,
+      scaleY: 0.1,
+      transformOrigin: 'center top',
+      ease: 'power2.in',
+      duration: 0.28 * ANIM_SPEED
+    }, 0);
+
+    tl.to('#svgLineRightWrap', {
+      y: () => -H() * 1.2,
+      scaleY: 0.1,
+      transformOrigin: 'center bottom',
+      ease: 'power2.in',
+      duration: 0.28 * ANIM_SPEED
+    }, 0);
+
+    lineTweenRef.current = tl;
+  };
+
+  const animateLinesIn = (onDone) => {
+    lineTweenRef.current?.kill();
+    const tl = gsap.timeline({ onComplete: onDone });
+
+    tl.to('#svgLineTop', {
+      x: 0,
+      scaleX: 1,
+      transformOrigin: 'left center',
+      ease: 'power2.out',
+      duration: 0.32 * ANIM_SPEED
+    }, 0);
+
+    tl.to('#svgLineBottom', {
+      x: 0,
+      scaleX: 1,
+      transformOrigin: 'right center',
+      ease: 'power2.out',
+      duration: 0.32 * ANIM_SPEED
+    }, 0);
+
+    tl.to('#svgLineCenter', {
+      x: 0,
+      scaleX: 1,
+      transformOrigin: 'left center',
+      ease: 'power2.out',
+      duration: 0.32 * ANIM_SPEED
+    }, 0);
+
+    tl.to('#svgLineLeftWrap', {
+      y: 0,
+      scaleY: 1,
+      transformOrigin: 'center top',
+      ease: 'power2.out',
+      duration: 0.32 * ANIM_SPEED
+    }, 0);
+
+    tl.to('#svgLineRightWrap', {
+      y: 0,
+      scaleY: 1,
+      transformOrigin: 'center bottom',
+      ease: 'power2.out',
+      duration: 0.32 * ANIM_SPEED
+    }, 0);
+
+    lineTweenRef.current = tl;
   };
 
   const animateTextOut = (onDone) => {
@@ -247,7 +345,11 @@ export default function ScrollScene() {
     if (bookStateRef.current !== 'closed') return;
     bookStateRef.current = 'opening';
     cancelCloseTimer();
-    animateTextOut(() => {
+    let linesDone = false;
+    let textDone = false;
+
+    const maybeStart = () => {
+      if (!linesDone || !textDone) return;
       setClosedVisible(false);
       setOpenVisible(true);
       setLeftHalfVisible(true);
@@ -258,6 +360,16 @@ export default function ScrollScene() {
         setLeftHalfVisible(true);
         bookStateRef.current = 'open';
       });
+    };
+
+    animateLinesOut(() => {
+      linesDone = true;
+      maybeStart();
+    });
+
+    animateTextOut(() => {
+      textDone = true;
+      maybeStart();
     });
   };
 
@@ -274,6 +386,7 @@ export default function ScrollScene() {
         setClosedVisible(true);
         setShifted(false);
         setOpenState('closed');
+        animateLinesIn();
         animateTextIn(() => {
           bookStateRef.current = 'closed';
         });
@@ -302,52 +415,11 @@ export default function ScrollScene() {
           rootRef.current?.style.setProperty('--nav-bottom', `${navBottom}px`);
         }
 
-        const W = () => window.innerWidth;
-        const H = () => window.innerHeight;
-
-        const lineTl = gsap.timeline({
-          scrollTrigger: {
-            trigger: '.scroll-container',
-            start: 'top top',
-            end: 'bottom bottom',
-            scrub: 1.1
-          }
-        });
-
-        lineTl.to('#svgLineTop', {
-          x: () => W() * 1.1,
-          scaleX: 0.3,
-          transformOrigin: 'left center',
-          ease: 'power2.in'
-        }, 0);
-
-        lineTl.to('#svgLineBottom', {
-          x: () => -W() * 1.1,
-          scaleX: 0.3,
-          transformOrigin: 'right center',
-          ease: 'power2.in'
-        }, 0);
-
-        lineTl.to('#svgLineCenter', {
-          x: () => -W() * 0.4,
-          scaleX: 0.2,
-          transformOrigin: 'left center',
-          ease: 'power2.in'
-        }, 0);
-
-        lineTl.to('#svgLineLeftWrap', {
-          y: () => H() * 1.2,
-          scaleY: 0.1,
-          transformOrigin: 'center top',
-          ease: 'power2.in'
-        }, 0);
-
-        lineTl.to('#svgLineRightWrap', {
-          y: () => -H() * 1.2,
-          scaleY: 0.1,
-          transformOrigin: 'center bottom',
-          ease: 'power2.in'
-        }, 0);
+        gsap.set('#svgLineTop', { x: 0, scaleX: 1, transformOrigin: 'left center' });
+        gsap.set('#svgLineBottom', { x: 0, scaleX: 1, transformOrigin: 'right center' });
+        gsap.set('#svgLineCenter', { x: 0, scaleX: 1, transformOrigin: 'left center' });
+        gsap.set('#svgLineLeftWrap', { y: 0, scaleY: 1, transformOrigin: 'center top' });
+        gsap.set('#svgLineRightWrap', { y: 0, scaleY: 1, transformOrigin: 'center bottom' });
 
         ScrollTrigger.create({
           trigger: '.scroll-container',
@@ -469,6 +541,7 @@ export default function ScrollScene() {
           leftHalfRef={leftHalfRef}
           leftHalfVisible={isLeftHalfVisible}
           onClosedClick={doOpen}
+          onCloseClick={doClose}
           onLeftPageClick={doClose}
           onRightCoverClick={doClose}
           leftPage={currentPage.left}

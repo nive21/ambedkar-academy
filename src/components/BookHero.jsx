@@ -11,6 +11,7 @@ export default function BookHero({
   leftHalfRef,
   leftHalfVisible,
   onClosedClick,
+  onCloseClick,
   onLeftPageClick,
   onRightCoverClick,
   leftPage,
@@ -29,7 +30,7 @@ export default function BookHero({
       <div className="book-scene">
         <div className="closed-book" ref={closedBookRef} onClick={onClosedClick}>
           <img src={bookImage} alt="Dr. Ambedkar Academy" />
-          <span className="click-hint">Scroll or click to open</span>
+          <span className="click-hint">Click to open</span>
         </div>
 
         <div className="flip-panel" ref={flipPanelRef}>
@@ -109,6 +110,17 @@ export default function BookHero({
 
           <div className="book-shadow" />
         </div>
+
+        <button
+          type="button"
+          className="click-close"
+          onClick={(event) => {
+            event.stopPropagation();
+            onCloseClick?.();
+          }}
+        >
+          Click to close
+        </button>
       </div>
     </div>
   );
