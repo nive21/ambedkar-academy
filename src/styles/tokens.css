@@ -1,0 +1,40 @@
+:root {
+  /* Color tokens */
+  --color-bg: #cccdc7;
+  --color-ink: #362a20;
+  --color-ink-strong: #4c2c1b;
+  --color-line: #8a7a6a;
+  --color-accent: #b2854b;
+  --color-indigo: #676f9c;
+  --color-navy: #3c3c6d;
+  --color-paper: #f1ede4;
+  --color-sand: #d7b4a2;
+  --color-footer: #2a1a0e;
+  --color-white: #ffffff;
+  --color-gold: #a7955d;
+
+  /* RGB helpers for alpha usage */
+  --color-bg-rgb: 204 205 199;
+  --color-ink-rgb: 54 42 32;
+  --color-ink-strong-rgb: 76 44 27;
+  --color-paper-rgb: 241 237 228;
+  --color-sand-rgb: 215 180 162;
+  --color-indigo-rgb: 103 111 156;
+
+  /* Typography */
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Instrument Serif', serif;
+  --font-mono: 'Cutive Mono', monospace;
+  --font-type: 'Special Elite', cursive;
+
+  /* Layout + motion */
+  --nav-bottom: 62px;
+  --anim-speed: 2;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Brush masks */
+  --brush-mask-h: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='6' viewBox='0 0 220 6'><path d='M2 3 C24 1 44 5 66 3 S110 5 132 3 S176 1 218 3' stroke='%23000' stroke-width='2.4' fill='none' stroke-linecap='round'/></svg>");
+  --brush-mask-v: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='220' viewBox='0 0 6 220'><path d='M3 2 C1 24 5 44 3 66 S5 110 3 132 S1 176 3 218' stroke='%23000' stroke-width='2.4' fill='none' stroke-linecap='round'/></svg>");
+}
