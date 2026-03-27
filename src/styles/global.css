@@ -61,11 +61,12 @@ body {
   position: absolute;
   top: 22px;
   left: 37px;
+  right: 37px;
   display: flex;
   align-items: center;
   gap: 44px;
   font-family: 'Cutive Mono', monospace;
-  font-size: 16px;
+  font-size: 14px;
   letter-spacing: 0.72px;
   text-transform: uppercase;
   color: var(--brown-text);
@@ -87,10 +88,13 @@ body {
   text-decoration: none;
   color: inherit;
   position: relative;
+}
+
+.navbar-link {
   padding-bottom: 3px;
 }
 
-.navbar a::after {
+.navbar a:not(.events-book-btn--nav)::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -107,7 +111,7 @@ body {
   transition: width 0.42s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
-.navbar a:hover::after {
+.navbar a:not(.events-book-btn--nav):hover::after {
   width: 100%;
 }
 
@@ -245,13 +249,12 @@ body {
   bottom: -36px;
   left: 50%;
   transform: translateX(-50%);
-  color: rgba(76, 44, 27, 0.45);
+  color: #A7955D;
   font-family: 'Cutive Mono', monospace;
   font-size: 12px;
   letter-spacing: 2px;
   text-transform: uppercase;
   white-space: nowrap;
-  animation: pulse 2s ease-in-out infinite;
 }
 
 .click-close {
@@ -259,7 +262,7 @@ body {
   bottom: -36px;
   left: 50%;
   transform: translateX(-50%);
-  color: rgba(76, 44, 27, 0.45);
+  color: rgba(204, 205, 199, 0.45);
   font-family: 'Cutive Mono', monospace;
   font-size: 12px;
   letter-spacing: 2px;
@@ -998,16 +1001,28 @@ body {
   }
 }
 
+.hori-line{
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  opacity: 0.65;
+}
+
 .events-section {
   background: #362a20;
   color: #f1ede4;
-  padding: clamp(72px, 10vw, 112px) 0 clamp(72px, 9vw, 104px);
+  padding: clamp(20px, 2vh, 40px) 0;
+}
+
+.events-line-h {
+  background-color: #676f9c;
 }
 
 .events-inner {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 clamp(24px, 8vw, 120px);
+  padding: clamp(40px, 8vh, 160px) clamp(24px, 8vw, 120px);
 }
 
 .events-layout {
@@ -1056,6 +1071,13 @@ body {
   text-transform: uppercase;
   text-decoration: none;
   transition: background 0.2s ease, color 0.2s ease;
+}
+
+.events-book-btn--nav {
+  position: static;
+  top: auto;
+  right: auto;
+  margin-left: auto;
 }
 
 .events-book-btn::before,
@@ -1265,12 +1287,7 @@ body {
 }
 
 .closing-line-h {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 6px;
   background-color: #d7b4a2;
-  opacity: 0.65;
 }
 
 .closing-line-top {
@@ -1328,7 +1345,7 @@ body {
 }
 
 .closing-quote {
-  width: 80%;
+  width: clamp(36px, 80%, 420px);
   font-family: 'Instrument Serif', serif;
   font-style: italic;
   font-size: clamp(36px, 6vw, 64px);

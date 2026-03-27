@@ -1,3 +1,5 @@
+import { BookHall } from "./BookHall";
+
 export default function EventsSection() {
   const events = [
     {
@@ -20,20 +22,12 @@ export default function EventsSection() {
 
   return (
     <section className="events-section">
+      <div className="hori-line events-line-h line-brush-h" />
       <div className="events-inner">
         <div className="events-layout">
           <div className="events-page" aria-label="Upcoming events">
             <div className="events-card">
-              <a
-                className="events-book-btn"
-                href="https://www.google.com"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className="events-book-btn__edge events-book-btn__edge--left" aria-hidden="true" />
-                <span className="events-book-btn__edge events-book-btn__edge--right" aria-hidden="true" />
-                <span className="events-book-btn__label">BOOK Hall</span>
-              </a>
+              <BookHall/>
 
               <div className="events-title">
                 <p>Upcoming</p>

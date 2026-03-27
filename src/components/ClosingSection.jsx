@@ -3,8 +3,8 @@ export default function ClosingSection() {
     <section className="closing-section" id="closing">
       <div className="closing-inner">
         <div className="closing-lines" aria-hidden="true">
-          <div className="closing-line-h closing-line-top line-brush-h" />
-          <div className="closing-line-h closing-line-bottom line-brush-h" />
+          <div className="closing-line-h hori-line closing-line-top line-brush-h" />
+          <div className="closing-line-h hori-line closing-line-bottom line-brush-h" />
           <div className="closing-line-v closing-line-v1 line-brush-v" />
           <div className="closing-line-v closing-line-v2 line-brush-v" />
         </div>
