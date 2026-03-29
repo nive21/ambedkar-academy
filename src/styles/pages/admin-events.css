@@ -1,0 +1,143 @@
+.admin-events-page {
+  min-height: 100vh;
+  background: var(--color-navy);
+  color: var(--color-bg);
+  padding: clamp(28px, 5vw, 56px) 16px 48px;
+}
+
+.admin-events-shell {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-events-back {
+  color: var(--color-bg);
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+}
+
+.admin-events-shell h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(42px, 6vw, 76px);
+  line-height: 0.92;
+}
+
+.admin-events-shell p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.admin-events-gate,
+.admin-events-form,
+.admin-events-list,
+.admin-events-item {
+  background: rgba(var(--color-bg-rgb) / 0.1);
+  border: 1px solid rgba(var(--color-bg-rgb) / 0.3);
+  padding: 16px;
+}
+
+.admin-events-form,
+.admin-events-list,
+.admin-events-item {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-events-form h2,
+.admin-events-list h2 {
+  font-family: var(--font-type);
+  font-size: 26px;
+}
+
+.admin-events-gate label,
+.admin-events-form label,
+.admin-events-item label {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-events-gate span,
+.admin-events-form span,
+.admin-events-item span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-events-gate input,
+.admin-events-form input,
+.admin-events-form textarea,
+.admin-events-item input,
+.admin-events-item textarea {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(var(--color-bg-rgb) / 0.35);
+  background: rgba(var(--color-bg-rgb) / 0.96);
+  color: var(--color-ink);
+  padding: 10px 12px;
+  font-family: var(--font-sans);
+}
+
+.admin-events-form textarea,
+.admin-events-item textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.admin-events-gate button,
+.admin-events-form button,
+.admin-events-actions button {
+  width: fit-content;
+  border: none;
+  padding: 10px 16px;
+  background: var(--color-indigo);
+  color: var(--color-white);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.admin-events-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-events-danger {
+  background: #7f1d1d;
+}
+
+.admin-events-form-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-events-empty {
+  opacity: 0.8;
+}
+
+.admin-events-status {
+  font-size: 13px;
+}
+
+.admin-events-status--error {
+  color: #ffd6d6;
+}
+
+.admin-events-status--success {
+  color: #dcfce7;
+}
+
+@media (max-width: 760px) {
+  .admin-events-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -99,6 +99,43 @@ function getSlotState(bookedSlots = new Set()) {
   };
 }
 
+function getMinutesFromTime(timeValue) {
+  const [hours, minutes] = timeValue.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function overlaps(start, end, slotStart, slotEnd) {
+  return start < slotEnd && end > slotStart;
+}
+
+function getAdminSlotState(events = []) {
+  const MORNING_START = 6 * 60;
+  const MORNING_END = 15 * 60;
+  const EVENING_START = 14 * 60;
+  const EVENING_END = 22 * 60;
+
+  const anyEvent = events.length > 0;
+  let morningBlocked = false;
+  let eveningBlocked = false;
+
+  events.forEach((event) => {
+    const start = getMinutesFromTime(event.start_time);
+    const end = getMinutesFromTime(event.end_time);
+    if (overlaps(start, end, MORNING_START, MORNING_END)) {
+      morningBlocked = true;
+    }
+    if (overlaps(start, end, EVENING_START, EVENING_END)) {
+      eveningBlocked = true;
+    }
+  });
+
+  return {
+    'half-morning': morningBlocked,
+    'half-evening': eveningBlocked,
+    'full-day': anyEvent
+  };
+}
+
 function FormField({
   label,
   name,
@@ -160,6 +197,7 @@ export default function BookHallPage() {
   const [eventDate, setEventDate] = useState('');
   const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [bookedSlotsByDate, setBookedSlotsByDate] = useState({});
+  const [adminEventsByDate, setAdminEventsByDate] = useState({});
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -171,26 +209,49 @@ export default function BookHallPage() {
   );
 
   const selectedDateSlots = bookedSlotsByDate[eventDate] ?? new Set();
-  const slotState = getSlotState(selectedDateSlots);
+  const selectedDateAdminEvents = adminEventsByDate[eventDate] ?? [];
+  const bookingBlockedState = getSlotState(selectedDateSlots);
+  const adminBlockedState = getAdminSlotState(selectedDateAdminEvents);
+  const slotState = {
+    'half-morning': bookingBlockedState['half-morning'] || adminBlockedState['half-morning'],
+    'half-evening': bookingBlockedState['half-evening'] || adminBlockedState['half-evening'],
+    'full-day': bookingBlockedState['full-day'] || adminBlockedState['full-day']
+  };
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadExistingBookings() {
-      const { data, error } = await supabase
-        .from('hall_bookings')
-        .select('event_date, booking_slot')
-        .in('status', ['pending', 'approved'])
-        .gte('event_date', minBookingDate);
+      const [{ data: bookingRows, error: bookingError }, { data: adminRows, error: adminError }] =
+        await Promise.all([
+          supabase
+            .from('hall_bookings')
+            .select('event_date, booking_slot')
+            .in('status', ['pending', 'approved'])
+            .gte('event_date', minBookingDate),
+          supabase
+            .from('admin_events')
+            .select('event_date, start_time, end_time')
+            .gte('event_date', minBookingDate)
+        ]);
 
       if (!isMounted) return;
 
-      if (error) {
+      if (bookingError || adminError) {
         setFormError('Unable to load booking availability right now. Please try again shortly.');
         return;
       }
 
-      setBookedSlotsByDate(createBookedSlotsMap(data ?? []));
+      setBookedSlotsByDate(createBookedSlotsMap(bookingRows ?? []));
+      setAdminEventsByDate(
+        (adminRows ?? []).reduce((acc, row) => {
+          if (!acc[row.event_date]) {
+            acc[row.event_date] = [];
+          }
+          acc[row.event_date].push(row);
+          return acc;
+        }, {})
+      );
     }
 
     loadExistingBookings();
@@ -201,7 +262,13 @@ export default function BookHallPage() {
   }, [minBookingDate]);
 
   function isDateFullyBooked(dateValue) {
-    const states = getSlotState(bookedSlotsByDate[dateValue] ?? new Set());
+    const bookingStates = getSlotState(bookedSlotsByDate[dateValue] ?? new Set());
+    const adminStates = getAdminSlotState(adminEventsByDate[dateValue] ?? []);
+    const states = {
+      'half-morning': bookingStates['half-morning'] || adminStates['half-morning'],
+      'half-evening': bookingStates['half-evening'] || adminStates['half-evening'],
+      'full-day': bookingStates['full-day'] || adminStates['full-day']
+    };
     return states['half-morning'] && states['half-evening'] && states['full-day'];
   }
 
@@ -491,7 +558,7 @@ export default function BookHallPage() {
                     {bookingSlotOptions.map((option) => (
                       <option key={option.value} value={option.value} disabled={slotState[option.value]}>
                         {option.label}
-                        {slotState[option.value] ? ' (Already booked)' : ''}
+                        {slotState[option.value] ? ' (Unavailable)' : ''}
                       </option>
                     ))}
                   </select>
