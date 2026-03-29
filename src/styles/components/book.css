@@ -278,6 +278,8 @@
   width: var(--page-width);
   height: calc(var(--cover-height) - (clamp(12px, 2.2vh, 18px) * 2));
   background:
+    repeating-radial-gradient(circle at 22% 18%, rgba(76, 44, 27, 0.035) 0 1px, transparent 1px 3px),
+    repeating-radial-gradient(circle at 74% 70%, rgba(54, 42, 32, 0.02) 0 1px, transparent 1px 4px),
     linear-gradient(
       90deg,
       rgba(var(--color-sand-rgb) / 0.15) 0%,
@@ -300,7 +302,10 @@
   top: clamp(12px, 2.2vh, 18px);
   width: var(--page-width);
   height: calc(var(--cover-height) - (clamp(12px, 2.2vh, 18px) * 2));
-  background-color: var(--color-paper);
+  background:
+    repeating-radial-gradient(circle at 28% 25%, rgba(76, 44, 27, 0.03) 0 1px, transparent 1px 3px),
+    repeating-radial-gradient(circle at 72% 68%, rgba(54, 42, 32, 0.02) 0 1px, transparent 1px 4px),
+    var(--color-paper);
   border-radius: 0 2px 2px 0;
   box-shadow: inset 6px 0 18px rgba(var(--color-ink-strong-rgb) / 0.1);
   z-index: 20;

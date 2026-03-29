@@ -2,6 +2,8 @@
   background: var(--color-navy);
   color: var(--color-bg);
   padding: 42px 0;
+  z-index: -2;
+  position: relative;
 }
 
 .closing-inner {
@@ -16,7 +18,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
 }
 
 .closing-line-h {

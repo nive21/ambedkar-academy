@@ -1,15 +1,12 @@
-import ScrollScene from './components/ScrollScene.jsx';
-import ObjectivesSection from './components/ObjectivesSection.jsx';
-import EventsSection from './components/EventsSection.jsx';
-import ClosingSection from './components/ClosingSection.jsx';
+import HomePage from './components/HomePage.jsx';
+import BookHallPage from './components/BookHallPage.jsx';
 
 export default function App() {
-  return (
-    <>
-      <ScrollScene />
-      <ObjectivesSection />
-      <EventsSection />
-      <ClosingSection />
-    </>
-  );
+  const trimmedPath = window.location.pathname.replace(/\/+$/, '') || '/';
+
+  if (trimmedPath === '/book-hall') {
+    return <BookHallPage />;
+  }
+
+  return <HomePage />;
 }

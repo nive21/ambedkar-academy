@@ -1,12 +1,91 @@
+import { useLayoutEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
 export default function ClosingSection() {
+  const sectionRef = useRef(null);
+  const lineTopRef = useRef(null);
+  const lineBottomRef = useRef(null);
+  const lineV1Ref = useRef(null);
+  const lineV2Ref = useRef(null);
+
+  useLayoutEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const lineEls = [
+      lineTopRef.current,
+      lineBottomRef.current,
+      lineV1Ref.current,
+      lineV2Ref.current
+    ].filter(Boolean);
+
+    if (!sectionRef.current || lineEls.length === 0) return undefined;
+
+    const getOutState = () => ({
+      topX: -window.innerWidth * 1.05,
+      bottomX: window.innerWidth * 1.05,
+      v1Y: -window.innerHeight * 1.1,
+      v2Y: window.innerHeight * 1.1
+    });
+
+    const setOut = () => {
+      const out = getOutState();
+      gsap.set(lineTopRef.current, { x: out.topX, scaleX: 0.25, transformOrigin: 'left center' });
+      gsap.set(lineBottomRef.current, { x: out.bottomX, scaleX: 0.25, transformOrigin: 'right center' });
+      gsap.set(lineV1Ref.current, { y: out.v1Y, scaleY: 0.1, transformOrigin: 'center top' });
+      gsap.set(lineV2Ref.current, { y: out.v2Y, scaleY: 0.1, transformOrigin: 'center bottom' });
+    };
+
+    const animateIn = () => {
+      gsap.killTweensOf(lineEls);
+      gsap.to(lineTopRef.current, { x: 0, scaleX: 1, duration: 0.5, ease: 'power2.out' });
+      gsap.to(lineBottomRef.current, { x: 0, scaleX: 1, duration: 0.5, ease: 'power2.out' });
+      gsap.to(lineV1Ref.current, { y: 0, scaleY: 1, duration: 0.5, ease: 'power2.out' });
+      gsap.to(lineV2Ref.current, { y: 0, scaleY: 1, duration: 0.5, ease: 'power2.out' });
+    };
+
+    const animateOut = () => {
+      const out = getOutState();
+      gsap.killTweensOf(lineEls);
+      gsap.to(lineTopRef.current, { x: out.topX, scaleX: 0.25, duration: 0.42, ease: 'power2.in' });
+      gsap.to(lineBottomRef.current, { x: out.bottomX, scaleX: 0.25, duration: 0.42, ease: 'power2.in' });
+      gsap.to(lineV1Ref.current, { y: out.v1Y, scaleY: 0.1, duration: 0.42, ease: 'power2.in' });
+      gsap.to(lineV2Ref.current, { y: out.v2Y, scaleY: 0.1, duration: 0.42, ease: 'power2.in' });
+    };
+
+    setOut();
+
+    const trigger = ScrollTrigger.create({
+      trigger: sectionRef.current,
+      start: 'top 85%',
+      end: 'bottom 15%',
+      onEnter: animateIn,
+      onEnterBack: animateIn,
+      onLeave: animateOut,
+      onLeaveBack: animateOut
+    });
+
+    const onResize = () => {
+      if (!trigger.isActive) setOut();
+    };
+
+    window.addEventListener('resize', onResize);
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      trigger.kill();
+      gsap.killTweensOf(lineEls);
+    };
+  }, []);
+
   return (
-    <section className="closing-section" id="closing">
+    <section className="closing-section" id="closing" ref={sectionRef}>
       <div className="closing-inner">
         <div className="closing-lines" aria-hidden="true">
-          <div className="closing-line-h hori-line closing-line-top line-brush-h" />
-          <div className="closing-line-h hori-line closing-line-bottom line-brush-h" />
-          <div className="closing-line-v closing-line-v1 line-brush-v" />
-          <div className="closing-line-v closing-line-v2 line-brush-v" />
+          <div className="closing-line-h hori-line closing-line-top line-brush-h" ref={lineTopRef} />
+          <div className="closing-line-h hori-line closing-line-bottom line-brush-h" ref={lineBottomRef} />
+          <div className="closing-line-v closing-line-v1 line-brush-v" ref={lineV1Ref} />
+          <div className="closing-line-v closing-line-v2 line-brush-v" ref={lineV2Ref} />
         </div>
 
         <div className="closing-content">
