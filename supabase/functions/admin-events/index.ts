@@ -32,13 +32,153 @@ function validateAdminAccess(accessKey: string | undefined) {
   }
 }
 
+function getMinutesFromTime(timeValue: string) {
+  const [hours, minutes] = timeValue.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function overlaps(start: number, end: number, slotStart: number, slotEnd: number) {
+  return start < slotEnd && end > slotStart;
+}
+
+function getBookingSlotRange(slot: string) {
+  if (slot === 'half-morning') return { start: 6 * 60, end: 15 * 60 };
+  if (slot === 'half-evening') return { start: 14 * 60, end: 22 * 60 };
+  return { start: 6 * 60, end: 22 * 60 };
+}
+
 function validateEventPayload(event: Record<string, string>) {
   if (!event?.eventDate || !event?.startTime || !event?.endTime || !event?.eventType || !event?.description) {
     throw new Error('Missing required event fields.');
   }
-
   if (event.endTime <= event.startTime) {
     throw new Error('End time must be after start time.');
+  }
+}
+
+async function assertEventDoesNotOverlap(
+  adminClient: ReturnType<typeof createClient>,
+  event: Record<string, string>,
+  ignoreEventId?: number
+) {
+  const eventStart = getMinutesFromTime(event.startTime);
+  const eventEnd = getMinutesFromTime(event.endTime);
+
+  const adminEventsQuery = adminClient
+    .from('admin_events')
+    .select('id, start_time, end_time')
+    .eq('event_date', event.eventDate);
+
+  const scopedAdminEventsQuery = ignoreEventId ? adminEventsQuery.neq('id', ignoreEventId) : adminEventsQuery;
+  const { data: sameDateEvents, error: sameDateEventsError } = await scopedAdminEventsQuery;
+  if (sameDateEventsError) throw new Error(sameDateEventsError.message);
+
+  const blockingAdminEvent = (sameDateEvents ?? []).find((existing) =>
+    overlaps(eventStart, eventEnd, getMinutesFromTime(existing.start_time), getMinutesFromTime(existing.end_time))
+  );
+  if (blockingAdminEvent) {
+    throw new Error('This timing overlaps another administrative event.');
+  }
+
+  const { data: hallBookings, error: hallBookingsError } = await adminClient
+    .from('hall_bookings')
+    .select('id, booking_slot')
+    .eq('event_date', event.eventDate)
+    .in('status', ['pending', 'approved']);
+
+  if (hallBookingsError) throw new Error(hallBookingsError.message);
+
+  const blockingHallBooking = (hallBookings ?? []).find((booking) => {
+    const range = getBookingSlotRange(booking.booking_slot);
+    return overlaps(eventStart, eventEnd, range.start, range.end);
+  });
+
+  if (blockingHallBooking) {
+    throw new Error('This timing overlaps an existing hall booking request.');
+  }
+}
+
+function getSlotLabel(slot: string) {
+  if (slot === 'half-morning') return 'Half Day (6am to 3pm)';
+  if (slot === 'half-evening') return 'Half Day (2pm to 10pm)';
+  return 'Full Day';
+}
+
+async function sendStatusEmails(params: {
+  userEmail: string;
+  fullName: string;
+  bookingId: number;
+  status: string;
+  reason?: string;
+  adminEmail: string;
+  eventDate: string;
+  bookingSlot: string;
+}) {
+  const resendApiKey = getEnv('RESEND_API_KEY');
+  const senderEmail = getEnv('BOOKING_SENDER_EMAIL');
+  const fallbackAdminEmail = getEnv('BOOKING_ADMIN_EMAIL');
+  const adminEmail = params.adminEmail || fallbackAdminEmail;
+
+  if (!resendApiKey || !senderEmail || !adminEmail) {
+    throw new Error('Missing RESEND_API_KEY, BOOKING_SENDER_EMAIL, or BOOKING_ADMIN_EMAIL.');
+  }
+
+  const statusLabel = params.status === 'approved' ? 'Approved' : 'Denied';
+  const reasonText =
+    params.status === 'rejected' && params.reason ? `<p><strong>Reason:</strong> ${params.reason}</p>` : '';
+
+  const userBody = `<p>Dear ${params.fullName},</p>
+<p>Your booking request #${params.bookingId} has been <strong>${statusLabel}</strong>.</p>
+<p><strong>Event Date:</strong> ${params.eventDate}<br />
+<strong>Slot:</strong> ${getSlotLabel(params.bookingSlot)}</p>
+${reasonText}
+<p>Thank you.</p>`;
+
+  const adminBody = `<p>Booking request status updated.</p>
+<p><strong>Request #:</strong> ${params.bookingId}<br />
+<strong>Name:</strong> ${params.fullName}<br />
+<strong>User Email:</strong> ${params.userEmail}<br />
+<strong>Status:</strong> ${statusLabel}</p>
+${reasonText}`;
+
+  const emails = [
+    {
+      to: params.userEmail,
+      subject: `Hall Booking ${statusLabel} (#${params.bookingId})`,
+      html: userBody,
+      replyTo: adminEmail
+    },
+    {
+      to: adminEmail,
+      subject: `Booking ${statusLabel} (#${params.bookingId})`,
+      html: adminBody,
+      replyTo: params.userEmail
+    }
+  ];
+
+  const results = await Promise.all(
+    emails.map((email) =>
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: senderEmail,
+          to: email.to,
+          subject: email.subject,
+          html: email.html,
+          reply_to: email.replyTo
+        })
+      })
+    )
+  );
+
+  const failed = results.find((result) => !result.ok);
+  if (failed) {
+    const detail = await failed.text();
+    throw new Error(`Status notification email failed: ${detail}`);
   }
 }
 
@@ -52,7 +192,7 @@ serve(async (req: Request): Promise<Response> => {
     validateAdminAccess(body?.accessKey);
     const adminClient = getAdminClient();
 
-    if (body?.action === 'list') {
+    if (body?.action === 'list-events') {
       const { data, error } = await adminClient
         .from('admin_events')
         .select('id, event_date, start_time, end_time, event_type, description, created_at')
@@ -66,8 +206,9 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    if (body?.action === 'create') {
+    if (body?.action === 'create-event') {
       validateEventPayload(body?.event);
+      await assertEventDoesNotOverlap(adminClient, body.event);
       const { error } = await adminClient.from('admin_events').insert({
         event_date: body.event.eventDate,
         start_time: body.event.startTime,
@@ -82,9 +223,10 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    if (body?.action === 'update') {
+    if (body?.action === 'update-event') {
       if (!body?.id) throw new Error('Missing event id.');
       validateEventPayload(body?.event);
+      await assertEventDoesNotOverlap(adminClient, body.event, Number(body.id));
       const { error } = await adminClient
         .from('admin_events')
         .update({
@@ -102,10 +244,101 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    if (body?.action === 'delete') {
+    if (body?.action === 'delete-event') {
       if (!body?.id) throw new Error('Missing event id.');
       const { error } = await adminClient.from('admin_events').delete().eq('id', body.id);
       if (error) throw new Error(error.message);
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (body?.action === 'list-bookings') {
+      const { data, error } = await adminClient
+        .from('hall_bookings')
+        .select(
+          'id, full_name, organization, email, phone, event_date, booking_slot, event_type, address, event_description, total_price, status, rejection_reason, payment_received, created_at'
+        )
+        .order('event_date', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      if (error) throw new Error(error.message);
+      return new Response(JSON.stringify({ bookings: data ?? [] }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (body?.action === 'set-booking-status') {
+      if (!body?.id) throw new Error('Missing booking id.');
+      if (!['approved', 'rejected'].includes(body?.status)) {
+        throw new Error('Status must be approved or rejected.');
+      }
+      if (body?.status === 'rejected' && !body?.reason?.trim()) {
+        throw new Error('Reason is required when denying a booking.');
+      }
+
+      const { data: booking, error: bookingError } = await adminClient
+        .from('hall_bookings')
+        .select('id, full_name, email, event_date, booking_slot')
+        .eq('id', body.id)
+        .single();
+
+      if (bookingError || !booking) throw new Error('Booking not found.');
+
+      const { error: updateError } = await adminClient
+        .from('hall_bookings')
+        .update({
+          status: body.status,
+          rejection_reason: body.status === 'rejected' ? body.reason : null
+        })
+        .eq('id', body.id);
+
+      if (updateError) throw new Error(updateError.message);
+
+      await sendStatusEmails({
+        userEmail: booking.email,
+        fullName: booking.full_name,
+        bookingId: booking.id,
+        status: body.status,
+        reason: body.reason,
+        adminEmail: body.adminEmail,
+        eventDate: booking.event_date,
+        bookingSlot: booking.booking_slot
+      });
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (body?.action === 'set-payment-status') {
+      if (!body?.id) throw new Error('Missing booking id.');
+      const paymentReceived = Boolean(body?.paymentReceived);
+
+      const { data: booking, error: bookingError } = await adminClient
+        .from('hall_bookings')
+        .select('id, status')
+        .eq('id', body.id)
+        .single();
+
+      if (bookingError || !booking) throw new Error('Booking not found.');
+      if (booking.status !== 'approved') {
+        throw new Error('Payment can only be marked for approved bookings.');
+      }
+
+      const { error: updateError } = await adminClient
+        .from('hall_bookings')
+        .update({
+          payment_received: paymentReceived,
+          payment_received_at: paymentReceived ? new Date().toISOString() : null
+        })
+        .eq('id', body.id);
+
+      if (updateError) throw new Error(updateError.message);
+
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

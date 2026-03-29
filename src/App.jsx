@@ -9,7 +9,7 @@ export default function App() {
     return <BookHallPage />;
   }
 
-  if (trimmedPath === '/admin-events') {
+  if (trimmedPath === '/admin') {
     return <AdminEventsPage />;
   }
 

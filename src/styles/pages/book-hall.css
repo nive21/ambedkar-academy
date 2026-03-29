@@ -347,6 +347,8 @@
 .book-hall-photo {
   width: 200px;
   border: 1px solid rgba(var(--color-ink-rgb) / 0.14);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .book-hall-photo--1 {
@@ -357,6 +359,36 @@
 .book-hall-photo--2 {
   margin-left: -18px;
   z-index: 2;
+}
+
+.book-hall-photo--1:hover,
+.book-hall-photo--1:focus-visible {
+  transform: translateX(20px) translateY(-4px);
+}
+
+.book-hall-photo--2:hover,
+.book-hall-photo--2:focus-visible {
+  transform: translateX(4px) translateY(-4px);
+}
+
+.book-hall-image-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.book-hall-image-modal {
+  display: grid;
+  gap: 12px;
+}
+
+.book-hall-image-modal img {
+  max-height: 78vh;
+  object-fit: contain;
 }
 
 .book-hall-modal-backdrop {

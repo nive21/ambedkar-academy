@@ -202,6 +202,8 @@ export default function BookHallPage() {
   const [formSuccess, setFormSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadState, setUploadState] = useState('idle');
+  const [uploadedAadharPath, setUploadedAadharPath] = useState('');
+  const [previewImage, setPreviewImage] = useState(null);
 
   const totalPrice = useMemo(
     () => bookingSlotOptions.find((option) => option.value === bookingSlot)?.price ?? 0,
@@ -278,7 +280,6 @@ export default function BookHallPage() {
     setBookingSlot('');
     setFormError('');
     setFormSuccess('');
-    setUploadState('idle');
 
     if (!nextDate) return;
 
@@ -321,35 +322,15 @@ export default function BookHallPage() {
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
-    const aadharFile = formData.get('aadharId');
-
-    if (!(aadharFile instanceof File) || aadharFile.size === 0) {
-      setFormError('Please upload a valid Aadhar ID file (image or PDF).');
+    if (!uploadedAadharPath) {
+      setFormError('Please upload Aadhar ID first and wait for upload completion.');
       return;
     }
 
     setIsSubmitting(true);
-    let uploadedFilePath = '';
 
     try {
-      const safeFileName = sanitizeFileName(aadharFile.name);
-      const filePath = `${eventDate}/${Date.now()}-${safeFileName}`;
-      uploadedFilePath = filePath;
-      setUploadState('uploading');
-
-      const { error: uploadError } = await supabase.storage
-        .from('booking-documents')
-        .upload(filePath, aadharFile, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: aadharFile.type
-        });
-
-      if (uploadError) {
-        throw new Error(`File upload failed: ${uploadError.message}`);
-      }
-      setUploadState('uploaded');
+      const formData = new FormData(event.currentTarget);
 
       const payload = {
         full_name: formData.get('fullName'),
@@ -362,7 +343,7 @@ export default function BookHallPage() {
         address: formData.get('address'),
         event_description: formData.get('eventDescription'),
         total_price: totalPrice,
-        aadhar_file_path: filePath,
+        aadhar_file_path: uploadedAadharPath,
         status: 'pending'
       };
 
@@ -408,17 +389,55 @@ export default function BookHallPage() {
       setEventDate('');
       setBookingSlot('');
       setUploadState('idle');
+      setUploadedAadharPath('');
       setFormSuccess(
         'Booking request submitted successfully. Confirmation emails have been sent to you and the admin.'
       );
     } catch (err) {
-      if (uploadedFilePath) {
-        await supabase.storage.from('booking-documents').remove([uploadedFilePath]);
-      }
-      setUploadState('idle');
       setFormError(err.message || 'Unable to submit booking request. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleAadharFileChange(event) {
+    setFormError('');
+    setFormSuccess('');
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) {
+      setUploadState('idle');
+      setUploadedAadharPath('');
+      return;
+    }
+
+    setUploadState('uploading');
+
+    try {
+      if (uploadedAadharPath) {
+        await supabase.storage.from('booking-documents').remove([uploadedAadharPath]);
+      }
+
+      const safeFileName = sanitizeFileName(selectedFile.name);
+      const filePath = `uploads/${Date.now()}-${safeFileName}`;
+      const { error: uploadError } = await supabase.storage
+        .from('booking-documents')
+        .upload(filePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: selectedFile.type
+        });
+
+      if (uploadError) {
+        throw new Error(`File upload failed: ${uploadError.message}`);
+      }
+
+      setUploadedAadharPath(filePath);
+      setUploadState('uploaded');
+    } catch (err) {
+      setUploadState('idle');
+      setUploadedAadharPath('');
+      setFormError(err.message || 'Unable to upload Aadhar ID. Please try again.');
     }
   }
 
@@ -444,12 +463,28 @@ export default function BookHallPage() {
               src={hallPhoto1}
               alt="Book hall view 1"
               loading="lazy"
+              role="button"
+              tabIndex={0}
+              onClick={() => setPreviewImage({ src: hallPhoto1, alt: 'Book hall view 1' })}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  setPreviewImage({ src: hallPhoto1, alt: 'Book hall view 1' });
+                }
+              }}
             />
             <img
               className="book-hall-photo book-hall-photo--2"
               src={hallPhoto2}
               alt="Book hall view 2"
               loading="lazy"
+              role="button"
+              tabIndex={0}
+              onClick={() => setPreviewImage({ src: hallPhoto2, alt: 'Book hall view 2' })}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  setPreviewImage({ src: hallPhoto2, alt: 'Book hall view 2' });
+                }
+              }}
             />
           </div>
         </header>
@@ -584,13 +619,8 @@ export default function BookHallPage() {
                       type="file"
                       accept="image/*,.pdf"
                       required
-                      onChange={() => {
-                        setFormError('');
-                        setFormSuccess('');
-                        setUploadState('idle');
-                      }}
+                      onChange={handleAadharFileChange}
                     />
-                    {console.log(uploadState)}
                     <span className="book-hall-upload-state" aria-live="polite">
                       {uploadState === 'uploading' ? (
                         <span className="book-hall-spinner" aria-label="Upload in progress" />
@@ -667,6 +697,27 @@ export default function BookHallPage() {
               ))}
             </ul>
             <button className="book-hall-modal-close" type="button" onClick={() => setIsRulesOpen(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {previewImage ? (
+        <div
+          className="book-hall-image-modal-backdrop"
+          role="presentation"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="book-hall-image-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Hall photo preview"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <img src={previewImage.src} alt={previewImage.alt} />
+            <button type="button" className="book-hall-modal-close" onClick={() => setPreviewImage(null)}>
               Close
             </button>
           </div>

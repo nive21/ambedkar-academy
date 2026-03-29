@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
-function defaultFormState() {
+const ADMIN_EMAIL = import.meta.env.VITE_BOOKING_ADMIN_EMAIL;
+
+function defaultEventFormState() {
   return {
     eventDate: '',
     startTime: '',
@@ -11,19 +13,37 @@ function defaultFormState() {
   };
 }
 
+function formatDate(isoDate) {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+function slotLabel(slot) {
+  if (slot === 'half-morning') return 'Half Day (6am to 3pm)';
+  if (slot === 'half-evening') return 'Half Day (2pm to 10pm)';
+  return 'Full Day';
+}
+
 export default function AdminEventsPage() {
   const [accessKey, setAccessKey] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [activeTab, setActiveTab] = useState('bookings');
   const [events, setEvents] = useState([]);
-  const [drafts, setDrafts] = useState({});
-  const [newEvent, setNewEvent] = useState(defaultFormState());
+  const [bookings, setBookings] = useState([]);
+  const [eventDrafts, setEventDrafts] = useState({});
+  const [denyReasons, setDenyReasons] = useState({});
+  const [bookingMessages, setBookingMessages] = useState({});
+  const [newEvent, setNewEvent] = useState(defaultEventFormState());
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const todayIso = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  async function callAdminEvents(action, payload = {}) {
+  async function callAdmin(action, payload = {}) {
     const { data, error: fnError } = await supabase.functions.invoke('admin-events', {
       body: { action, accessKey, ...payload }
     });
@@ -39,27 +59,39 @@ export default function AdminEventsPage() {
     return data;
   }
 
-  async function loadEvents() {
+  async function loadDashboardData() {
     setLoading(true);
     setError('');
     try {
-      const response = await callAdminEvents('list');
-      const records = response?.events ?? [];
-      setEvents(records);
-      setDrafts(
-        records.reduce((acc, event) => {
-          acc[event.id] = {
-            eventDate: event.event_date,
-            startTime: event.start_time,
-            endTime: event.end_time,
-            eventType: event.event_type,
-            description: event.description
+      const [eventsData, bookingsData] = await Promise.all([
+        callAdmin('list-events'),
+        callAdmin('list-bookings')
+      ]);
+
+      const eventRows = eventsData?.events ?? [];
+      const bookingRows = bookingsData?.bookings ?? [];
+      setEvents(eventRows);
+      setBookings(bookingRows);
+      setEventDrafts(
+        eventRows.reduce((acc, eventItem) => {
+          acc[eventItem.id] = {
+            eventDate: eventItem.event_date,
+            startTime: eventItem.start_time,
+            endTime: eventItem.end_time,
+            eventType: eventItem.event_type,
+            description: eventItem.description
           };
           return acc;
         }, {})
       );
+      setDenyReasons(
+        bookingRows.reduce((acc, booking) => {
+          acc[booking.id] = booking.rejection_reason ?? '';
+          return acc;
+        }, {})
+      );
     } catch (err) {
-      setError(err.message || 'Unable to load events.');
+      setError(err.message || 'Unable to load admin dashboard data.');
     } finally {
       setLoading(false);
     }
@@ -67,7 +99,7 @@ export default function AdminEventsPage() {
 
   useEffect(() => {
     if (!isAuthorized) return;
-    loadEvents();
+    loadDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthorized]);
 
@@ -81,10 +113,28 @@ export default function AdminEventsPage() {
     return '';
   }
 
-  async function handleUnlock(event) {
-    event.preventDefault();
+  function clearStatus() {
     setError('');
     setSuccess('');
+  }
+
+  function setBookingMessage(bookingId, type, message) {
+    setBookingMessages((prev) => ({
+      ...prev,
+      [bookingId]: { type, message }
+    }));
+  }
+
+  function statusLabel(status) {
+    if (status === 'approved') return 'Approved';
+    if (status === 'rejected') return 'Denied';
+    if (status === 'cancelled') return 'Cancelled';
+    return 'Pending';
+  }
+
+  async function handleUnlock(event) {
+    event.preventDefault();
+    clearStatus();
     if (!accessKey.trim()) {
       setError('Please enter admin access key.');
       return;
@@ -94,8 +144,7 @@ export default function AdminEventsPage() {
 
   async function handleCreateEvent(event) {
     event.preventDefault();
-    setError('');
-    setSuccess('');
+    clearStatus();
 
     const validationError = validateEventPayload(newEvent);
     if (validationError) {
@@ -105,7 +154,7 @@ export default function AdminEventsPage() {
 
     setLoading(true);
     try {
-      await callAdminEvents('create', {
+      await callAdmin('create-event', {
         event: {
           eventDate: newEvent.eventDate,
           startTime: newEvent.startTime,
@@ -114,9 +163,9 @@ export default function AdminEventsPage() {
           description: newEvent.description.trim()
         }
       });
-      setNewEvent(defaultFormState());
+      setNewEvent(defaultEventFormState());
       setSuccess('Administrative event created.');
-      await loadEvents();
+      await loadDashboardData();
     } catch (err) {
       setError(err.message || 'Unable to create event.');
     } finally {
@@ -125,9 +174,8 @@ export default function AdminEventsPage() {
   }
 
   async function handleUpdateEvent(eventId) {
-    setError('');
-    setSuccess('');
-    const draft = drafts[eventId];
+    clearStatus();
+    const draft = eventDrafts[eventId];
     const validationError = validateEventPayload(draft);
     if (validationError) {
       setError(validationError);
@@ -136,7 +184,7 @@ export default function AdminEventsPage() {
 
     setLoading(true);
     try {
-      await callAdminEvents('update', {
+      await callAdmin('update-event', {
         id: eventId,
         event: {
           eventDate: draft.eventDate,
@@ -147,7 +195,7 @@ export default function AdminEventsPage() {
         }
       });
       setSuccess('Event updated.');
-      await loadEvents();
+      await loadDashboardData();
     } catch (err) {
       setError(err.message || 'Unable to update event.');
     } finally {
@@ -156,15 +204,74 @@ export default function AdminEventsPage() {
   }
 
   async function handleDeleteEvent(eventId) {
-    setError('');
-    setSuccess('');
+    clearStatus();
     setLoading(true);
     try {
-      await callAdminEvents('delete', { id: eventId });
+      await callAdmin('delete-event', { id: eventId });
       setSuccess('Event deleted.');
-      await loadEvents();
+      await loadDashboardData();
     } catch (err) {
       setError(err.message || 'Unable to delete event.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleApproveBooking(bookingId) {
+    clearStatus();
+    setLoading(true);
+    try {
+      await callAdmin('set-booking-status', {
+        id: bookingId,
+        status: 'approved',
+        reason: '',
+        adminEmail: ADMIN_EMAIL
+      });
+      setBookingMessage(bookingId, 'success', 'Booking approved and notification sent.');
+      await loadDashboardData();
+    } catch (err) {
+      setBookingMessage(bookingId, 'error', err.message || 'Unable to approve booking.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDenyBooking(bookingId) {
+    clearStatus();
+    const reason = denyReasons[bookingId]?.trim() ?? '';
+    if (!reason) {
+      setBookingMessage(bookingId, 'error', 'Please enter a reason before denying a booking.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await callAdmin('set-booking-status', {
+        id: bookingId,
+        status: 'rejected',
+        reason,
+        adminEmail: ADMIN_EMAIL
+      });
+      setBookingMessage(bookingId, 'success', 'Booking denied and notification sent.');
+      await loadDashboardData();
+    } catch (err) {
+      setBookingMessage(bookingId, 'error', err.message || 'Unable to deny booking.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handlePaymentToggle(bookingId, paymentReceived) {
+    clearStatus();
+    setLoading(true);
+    try {
+      await callAdmin('set-payment-status', {
+        id: bookingId,
+        paymentReceived
+      });
+      setBookingMessage(bookingId, 'success', paymentReceived ? 'Marked as paid.' : 'Marked as unpaid.');
+      await loadDashboardData();
+    } catch (err) {
+      setBookingMessage(bookingId, 'error', err.message || 'Unable to update payment status.');
     } finally {
       setLoading(false);
     }
@@ -176,11 +283,8 @@ export default function AdminEventsPage() {
         <a className="admin-events-back" href="/">
           Back To Home
         </a>
-        <h1>Administrative Events</h1>
-        <p>
-          Add, update, or delete hall-blocking events with custom timings. These events will also
-          appear in the home page events section.
-        </p>
+        <h1>Admin Dashboard</h1>
+        <p>Review booking requests and manage admin-only calendar events.</p>
 
         {!isAuthorized ? (
           <form className="admin-events-gate" onSubmit={handleUnlock}>
@@ -198,173 +302,305 @@ export default function AdminEventsPage() {
           </form>
         ) : (
           <>
-            <form className="admin-events-form" onSubmit={handleCreateEvent}>
-              <h2>Add Event</h2>
-              <div className="admin-events-form-grid">
-                <label>
-                  <span>Date</span>
-                  <input
-                    type="date"
-                    min={todayIso}
-                    value={newEvent.eventDate}
-                    onChange={(event) =>
-                      setNewEvent((prev) => ({ ...prev, eventDate: event.target.value }))
-                    }
-                    required
-                  />
-                </label>
-                <label>
-                  <span>Start Time</span>
-                  <input
-                    type="time"
-                    value={newEvent.startTime}
-                    onChange={(event) =>
-                      setNewEvent((prev) => ({ ...prev, startTime: event.target.value }))
-                    }
-                    required
-                  />
-                </label>
-                <label>
-                  <span>End Time</span>
-                  <input
-                    type="time"
-                    value={newEvent.endTime}
-                    onChange={(event) =>
-                      setNewEvent((prev) => ({ ...prev, endTime: event.target.value }))
-                    }
-                    required
-                  />
-                </label>
-              </div>
-              <label>
-                <span>Event Type</span>
-                <input
-                  type="text"
-                  value={newEvent.eventType}
-                  onChange={(event) => setNewEvent((prev) => ({ ...prev, eventType: event.target.value }))}
-                  placeholder="Administrative review / Internal meeting / ..."
-                  required
-                />
-              </label>
-              <label>
-                <span>Short Description</span>
-                <textarea
-                  value={newEvent.description}
-                  onChange={(event) =>
-                    setNewEvent((prev) => ({ ...prev, description: event.target.value }))
-                  }
-                  placeholder="Briefly describe the event."
-                  required
-                />
-              </label>
-              <button type="submit" disabled={loading}>
-                {loading ? 'Saving...' : 'Add Event'}
+            <div className="admin-events-tabs">
+              <button
+                type="button"
+                className={activeTab === 'bookings' ? 'is-active' : ''}
+                onClick={() => setActiveTab('bookings')}
+                disabled={loading}
+              >
+                Hall Bookings
               </button>
-            </form>
+              <button
+                type="button"
+                className={activeTab === 'admin-events' ? 'is-active' : ''}
+                onClick={() => setActiveTab('admin-events')}
+                disabled={loading}
+              >
+                Admin Events
+              </button>
+            </div>
 
-            <section className="admin-events-list">
-              <h2>Manage Events</h2>
-              {events.length === 0 ? <p className="admin-events-empty">No events yet.</p> : null}
-              {events.map((eventItem) => {
-                const draft = drafts[eventItem.id] ?? {
-                  eventDate: eventItem.event_date,
-                  startTime: eventItem.start_time,
-                  endTime: eventItem.end_time,
-                  eventType: eventItem.event_type,
-                  description: eventItem.description
-                };
+            {loading ? (
+              <div className="admin-loading" role="status" aria-live="polite">
+                <span className="admin-loading-spinner" />
+                <span>Loading latest data...</span>
+              </div>
+            ) : null}
 
-                return (
-                  <article key={eventItem.id} className="admin-events-item">
-                    <div className="admin-events-form-grid">
-                      <label>
-                        <span>Date</span>
-                        <input
-                          type="date"
-                          value={draft.eventDate}
-                          min={todayIso}
-                          onChange={(event) =>
-                            setDrafts((prev) => ({
-                              ...prev,
-                              [eventItem.id]: { ...draft, eventDate: event.target.value }
-                            }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>Start Time</span>
-                        <input
-                          type="time"
-                          value={draft.startTime}
-                          onChange={(event) =>
-                            setDrafts((prev) => ({
-                              ...prev,
-                              [eventItem.id]: { ...draft, startTime: event.target.value }
-                            }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>End Time</span>
-                        <input
-                          type="time"
-                          value={draft.endTime}
-                          onChange={(event) =>
-                            setDrafts((prev) => ({
-                              ...prev,
-                              [eventItem.id]: { ...draft, endTime: event.target.value }
-                            }))
-                          }
-                        />
-                      </label>
+            {activeTab === 'bookings' ? (
+              <section className="admin-events-list">
+                <h2>Booking Requests</h2>
+                {bookings.length === 0 ? <p className="admin-events-empty">No booking requests yet.</p> : null}
+                {bookings.map((booking) => (
+                  <article key={booking.id} className="admin-events-item">
+                    <div className="admin-booking-header">
+                      <h3>#{booking.id} · {booking.full_name}</h3>
+                      <span className={`admin-booking-status admin-booking-status--${booking.status}`}>
+                        {statusLabel(booking.status)}
+                      </span>
                     </div>
-                    <label>
-                      <span>Event Type</span>
-                      <input
-                        type="text"
-                        value={draft.eventType}
-                        onChange={(event) =>
-                          setDrafts((prev) => ({
-                            ...prev,
-                            [eventItem.id]: { ...draft, eventType: event.target.value }
-                          }))
-                        }
-                      />
-                    </label>
-                    <label>
-                      <span>Short Description</span>
-                      <textarea
-                        value={draft.description}
-                        onChange={(event) =>
-                          setDrafts((prev) => ({
-                            ...prev,
-                            [eventItem.id]: { ...draft, description: event.target.value }
-                          }))
-                        }
-                      />
-                    </label>
-                    <div className="admin-events-actions">
-                      <button type="button" onClick={() => handleUpdateEvent(eventItem.id)} disabled={loading}>
-                        Update
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-events-danger"
-                        onClick={() => handleDeleteEvent(eventItem.id)}
-                        disabled={loading}
+                    <p>
+                      <strong>Date:</strong> {formatDate(booking.event_date)} ·{' '}
+                      <strong>Slot:</strong> {slotLabel(booking.booking_slot)}
+                    </p>
+                    <p>
+                      <strong>Type:</strong> {booking.event_type}
+                    </p>
+                    <p>
+                      <strong>Description:</strong> {booking.event_description}
+                    </p>
+                    <p>
+                      <strong>Email:</strong> {booking.email} · <strong>Phone:</strong> {booking.phone}
+                    </p>
+                    <p>
+                      <strong>Address:</strong> {booking.address}
+                    </p>
+                    <p>
+                      <strong>Amount:</strong> ₹{Number(booking.total_price).toLocaleString('en-IN')} ·{' '}
+                      <strong>Payment:</strong> {booking.payment_received ? 'Received' : 'Pending'}
+                    </p>
+                    {booking.status === 'rejected' && booking.rejection_reason ? (
+                      <p>
+                        <strong>Reason:</strong> {booking.rejection_reason}
+                      </p>
+                    ) : null}
+
+                    {booking.status === 'pending' ? (
+                      <div className="admin-booking-actions">
+                        <div className="admin-decision-block">
+                          <div className="admin-decision-option">
+                            <p className="admin-decision-title">Option 1: Approve</p>
+                            <button type="button" onClick={() => handleApproveBooking(booking.id)} disabled={loading}>
+                              Approve Request
+                            </button>
+                          </div>
+                          <div className="admin-decision-option">
+                            <p className="admin-decision-title">Option 2: Deny</p>
+                            <div className="admin-deny-block">
+                              <input
+                                type="text"
+                                value={denyReasons[booking.id] ?? ''}
+                                placeholder="Reason for denial"
+                                onChange={(event) =>
+                                  setDenyReasons((prev) => ({ ...prev, [booking.id]: event.target.value }))
+                                }
+                              />
+                              <button
+                                type="button"
+                                className="admin-events-danger"
+                                onClick={() => handleDenyBooking(booking.id)}
+                                disabled={loading}
+                              >
+                                Deny Request
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {booking.status === 'approved' ? (
+                      <div className="admin-booking-actions">
+                        <button
+                          type="button"
+                          onClick={() => handlePaymentToggle(booking.id, !booking.payment_received)}
+                          disabled={loading}
+                        >
+                          {booking.payment_received ? 'Mark As Unpaid' : 'Mark As Paid'}
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {bookingMessages[booking.id] ? (
+                      <p
+                        className={`admin-inline-status ${
+                          bookingMessages[booking.id].type === 'error'
+                            ? 'admin-inline-status--error'
+                            : 'admin-inline-status--success'
+                        }`}
+                        aria-live="polite"
                       >
-                        Delete
-                      </button>
-                    </div>
+                        {bookingMessages[booking.id].message}
+                      </p>
+                    ) : null}
                   </article>
-                );
-              })}
-            </section>
+                ))}
+              </section>
+            ) : null}
+
+            {activeTab === 'admin-events' ? (
+              <>
+                <form className="admin-events-form" onSubmit={handleCreateEvent}>
+                  <h2>Add Event</h2>
+                  <div className="admin-events-form-grid">
+                    <label>
+                      <span>Date</span>
+                      <input
+                        type="date"
+                        min={todayIso}
+                        value={newEvent.eventDate}
+                        onChange={(event) =>
+                          setNewEvent((prev) => ({ ...prev, eventDate: event.target.value }))
+                        }
+                        required
+                      />
+                    </label>
+                    <label>
+                      <span>Start Time</span>
+                      <input
+                        type="time"
+                        value={newEvent.startTime}
+                        onChange={(event) =>
+                          setNewEvent((prev) => ({ ...prev, startTime: event.target.value }))
+                        }
+                        required
+                      />
+                    </label>
+                    <label>
+                      <span>End Time</span>
+                      <input
+                        type="time"
+                        value={newEvent.endTime}
+                        onChange={(event) =>
+                          setNewEvent((prev) => ({ ...prev, endTime: event.target.value }))
+                        }
+                        required
+                      />
+                    </label>
+                  </div>
+                  <label>
+                    <span>Event Type</span>
+                    <input
+                      type="text"
+                      value={newEvent.eventType}
+                      onChange={(event) => setNewEvent((prev) => ({ ...prev, eventType: event.target.value }))}
+                      placeholder="Administrative review / Internal meeting / ..."
+                      required
+                    />
+                  </label>
+                  <label>
+                    <span>Short Description</span>
+                    <textarea
+                      value={newEvent.description}
+                      onChange={(event) =>
+                        setNewEvent((prev) => ({ ...prev, description: event.target.value }))
+                      }
+                      placeholder="Briefly describe the event."
+                      required
+                    />
+                  </label>
+                  <button type="submit" disabled={loading}>
+                    {loading ? 'Saving...' : 'Add Event'}
+                  </button>
+                </form>
+
+                {error ? <p className="admin-events-status admin-events-status--error">{error}</p> : null}
+                {success ? <p className="admin-events-status admin-events-status--success">{success}</p> : null}
+
+                <section className="admin-events-list">
+                  <h2>Manage Events</h2>
+                  {events.length === 0 ? <p className="admin-events-empty">No events yet.</p> : null}
+                  {events.map((eventItem) => {
+                    const draft = eventDrafts[eventItem.id] ?? {
+                      eventDate: eventItem.event_date,
+                      startTime: eventItem.start_time,
+                      endTime: eventItem.end_time,
+                      eventType: eventItem.event_type,
+                      description: eventItem.description
+                    };
+
+                    return (
+                      <article key={eventItem.id} className="admin-events-item">
+                        <div className="admin-events-form-grid">
+                          <label>
+                            <span>Date</span>
+                            <input
+                              type="date"
+                              value={draft.eventDate}
+                              min={todayIso}
+                              onChange={(event) =>
+                                setEventDrafts((prev) => ({
+                                  ...prev,
+                                  [eventItem.id]: { ...draft, eventDate: event.target.value }
+                                }))
+                              }
+                            />
+                          </label>
+                          <label>
+                            <span>Start Time</span>
+                            <input
+                              type="time"
+                              value={draft.startTime}
+                              onChange={(event) =>
+                                setEventDrafts((prev) => ({
+                                  ...prev,
+                                  [eventItem.id]: { ...draft, startTime: event.target.value }
+                                }))
+                              }
+                            />
+                          </label>
+                          <label>
+                            <span>End Time</span>
+                            <input
+                              type="time"
+                              value={draft.endTime}
+                              onChange={(event) =>
+                                setEventDrafts((prev) => ({
+                                  ...prev,
+                                  [eventItem.id]: { ...draft, endTime: event.target.value }
+                                }))
+                              }
+                            />
+                          </label>
+                        </div>
+                        <label>
+                          <span>Event Type</span>
+                          <input
+                            type="text"
+                            value={draft.eventType}
+                            onChange={(event) =>
+                              setEventDrafts((prev) => ({
+                                ...prev,
+                                [eventItem.id]: { ...draft, eventType: event.target.value }
+                              }))
+                            }
+                          />
+                        </label>
+                        <label>
+                          <span>Short Description</span>
+                          <textarea
+                            value={draft.description}
+                            onChange={(event) =>
+                              setEventDrafts((prev) => ({
+                                ...prev,
+                                [eventItem.id]: { ...draft, description: event.target.value }
+                              }))
+                            }
+                          />
+                        </label>
+                        <div className="admin-events-actions">
+                          <button type="button" onClick={() => handleUpdateEvent(eventItem.id)} disabled={loading}>
+                            Update
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-events-danger"
+                            onClick={() => handleDeleteEvent(eventItem.id)}
+                            disabled={loading}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </section>
+              </>
+            ) : null}
           </>
         )}
 
-        {error ? <p className="admin-events-status admin-events-status--error">{error}</p> : null}
-        {success ? <p className="admin-events-status admin-events-status--success">{success}</p> : null}
       </section>
     </main>
   );

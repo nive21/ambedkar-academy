@@ -39,8 +39,11 @@ Deploy admin function:
 
 Set function secret:
 
-- `ADMIN_EVENTS_ACCESS_KEY` (used by `/admin-events` page access gate)
+- `ADMIN_EVENTS_ACCESS_KEY` (used by `/admin` page access gate)
 - `SUPABASE_SERVICE_ROLE_KEY` (required by `admin-events` function for create/update/delete)
+- `RESEND_API_KEY` (required for approve/deny notification emails from admin dashboard)
+- `BOOKING_SENDER_EMAIL` (verified sender used by admin dashboard notifications)
+- `BOOKING_ADMIN_EMAIL` (fallback admin recipient for dashboard notifications)
 
 ## 5. Booking rules implemented in app
 - Date must be at least 7 days ahead.
