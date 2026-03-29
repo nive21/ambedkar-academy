@@ -197,6 +197,19 @@
   color: var(--color-bg);
 }
 
+.book-hall-status {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.book-hall-status--error {
+  color: #ffd6d6;
+}
+
+.book-hall-status--success {
+  color: #dcfce7;
+}
+
 .book-hall-field {
   display: grid;
   gap: 6px;
@@ -223,6 +236,7 @@
 .book-hall-field__control[type='file'] {
   padding: 9px 10px;
   background: var(--color-paper);
+  padding-right: 42px;
 }
 
 .book-hall-field__control:focus {
@@ -233,6 +247,44 @@
 .book-hall-field__control--textarea {
   resize: vertical;
   min-height: 140px;
+}
+
+.book-hall-upload-wrap {
+  position: relative;
+}
+
+.book-hall-upload-state {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+.book-hall-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(var(--color-ink-rgb) / 0.28);
+  border-top-color: var(--color-indigo);
+  border-radius: 50%;
+  animation: book-hall-spin 0.7s linear infinite;
+}
+
+.book-hall-check {
+  color: #16a34a;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@keyframes book-hall-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .book-hall-submit {
@@ -250,6 +302,11 @@
 
 .book-hall-submit:hover {
   background: var(--color-ink-strong);
+}
+
+.book-hall-submit:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
 }
 
 .book-hall-submit-row {
