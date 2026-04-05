@@ -1,10 +1,33 @@
 .impact-section {
   position: relative;
   padding: clamp(72px, 9vw, 110px) clamp(20px, 6vw, 72px);
-  background:
-    radial-gradient(circle at 14% 16%, rgba(255, 255, 255, 0.34) 0, rgba(255, 255, 255, 0) 52%),
-    radial-gradient(circle at 88% 80%, rgba(76, 44, 27, 0.06) 0, rgba(76, 44, 27, 0) 52%),
-    var(--color-bg);
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.impact-section::before,
+.impact-section::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background-color: var(--color-indigo);
+  -webkit-mask-image: var(--brush-mask-h);
+  mask-image: var(--brush-mask-h);
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-size: 220px 6px;
+  mask-size: 220px 6px;
+  z-index: 2;
+}
+
+.impact-section::before {
+  top: -3px;
+}
+
+.impact-section::after {
+  bottom: -3px;
 }
 
 .impact-inner {
@@ -33,7 +56,7 @@
   letter-spacing: -2.2px;
   line-height: 0.88;
   font-weight: 400;
-  color: var(--color-ink-strong);
+  color: var(--color-indigo);
 }
 
 .impact-intro {
@@ -43,7 +66,7 @@
   font-family: var(--font-sans);
   line-height: 1.6;
   letter-spacing: 0.25px;
-  color: rgba(var(--color-ink-strong-rgb) / 0.9);
+  color: rgba(var(--color-paper-rgb) / 0.9);
 }
 
 .impact-list {
@@ -64,7 +87,7 @@
   gap: 12px;
   align-items: baseline;
   cursor: pointer;
-  color: rgba(var(--color-ink-strong-rgb) / 0.62);
+  color: rgba(var(--color-paper-rgb) / 0.7);
   padding: 8px 10px;
   border-radius: 8px;
   transition:
@@ -74,15 +97,15 @@
 }
 
 .impact-list-btn:hover {
-  color: rgba(var(--color-ink-strong-rgb) / 0.88);
-  background: rgba(var(--color-paper-rgb) / 0.4);
+  color: rgba(var(--color-paper-rgb) / 0.95);
+  background: rgba(var(--color-paper-rgb) / 0.12);
   transform: translateX(2px);
 }
 
 .impact-list-btn.is-active {
-  color: var(--color-ink-strong);
-  background: rgba(var(--color-paper-rgb) / 0.65);
-  box-shadow: 0 8px 22px rgba(var(--color-ink-rgb) / 0.08);
+  color: var(--color-paper);
+  background: rgba(var(--color-paper-rgb) / 0.2);
+  box-shadow: 0 8px 22px rgba(var(--color-ink-rgb) / 0.2);
 }
 
 .impact-list-index {
@@ -118,7 +141,7 @@
   height: 50px;
   border-radius: 999px;
   border: 1.5px solid var(--color-ink-strong);
-  background: rgba(var(--color-paper-rgb) / 0.7);
+  background: rgba(var(--color-paper-rgb) / 0.85);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -127,7 +150,7 @@
 }
 
 .impact-control-btn:hover {
-  background: rgba(var(--color-ink-strong-rgb) / 0.08);
+  background: rgba(var(--color-paper-rgb) / 0.28);
 }
 
 .impact-control-btn svg {

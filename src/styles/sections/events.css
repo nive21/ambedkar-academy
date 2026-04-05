@@ -1,7 +1,6 @@
 .events-section {
   background: var(--color-ink);
   color: var(--color-paper);
-  padding: clamp(20px, 2vh, 40px) 0;
 }
 
 .events-line-h {

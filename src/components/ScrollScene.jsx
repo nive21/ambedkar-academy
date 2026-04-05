@@ -21,8 +21,8 @@ const TIMING = {
 
 const TAB_CONFIG = [
   {
-    id: 'history',
-    label: 'History',
+    id: 'about',
+    label: 'About',
     pages: [
       {
         left: {
@@ -30,51 +30,105 @@ const TAB_CONFIG = [
           body: ''
         },
         right: {
-          title: "'70s",
+          yearTitle: "'70s",
           body:
             "The People's Educational Trust – Dr. Ambedkar Academy is a unique organisation with the privilege of serving marginalised people for over 45 years. It blossomed from informal monthly gatherings of socially conscious intellectuals way back in the 1970s to discuss and deliberate on issues concerning the development of marginalised people."
         }
       },
       {
         left: {
-          title: 'Feb 1976',
-          body: 'A turning point that established a lasting commitment to inclusive education.'
+          yearTitle: '1976',
+          body: 'These monthly meetings stirred the conscience of people with social concerns, culminating in the formation of a formal society, namely the People’s Educational, Social and Cultural Society, registered in 1976 under the Societies Registration Act.'
         },
         right: {
-          title: 'Jan 1996',
-          body: 'A decade of community programs expanded access and deepened impact across the region.'
+          yearTitle: '1996',
+          imageSrc: 'placeholder',
+          imageAlt: 'A Dr. Ambedkar Academy gathering (Nov 2018)',
+          body: 'In 1996, the Society was converted into The People’s Educational Trust as a public charitable trust, broadening its activities.'
         }
       }
     ]
   },
   {
-    id: 'impact',
-    label: 'Impact',
+    id: 'gallery',
+    label: 'Gallery',
     pages: [
       {
         left: {
-          title: 'Impact 1',
-          body: 'Scholarships, mentorship, and support programs that opened doors.'
+          title: 'Gallery',
+          body: 'Moments from the Academy’s continuous public service and outreach.'
         },
         right: {
-          title: 'Impact 2',
-          body: 'Grassroots initiatives that strengthened families and local economies.'
+          layout: 'image',
+          body: 'Academy gatherings focused on education, rights, and social progress.',
+          imageSrc: 'placeholder',
+          imageAlt: 'Dr. Ambedkar Academy gallery photograph 1'
+        }
+      },
+      {
+        left: {
+          layout: 'image',
+          body: 'Monthly forums where scholars, officers, and activists share insights.',
+          imageSrc: 'placeholder',
+          imageAlt: 'Dr. Ambedkar Academy gallery photograph 2'
+        },
+        right: {
+          layout: 'image',
+          body: 'Monthly forums where scholars, officers, and activists share insights.',
+          imageSrc: 'placeholder',
+          imageAlt: 'Dr. Ambedkar Academy gallery photograph 3'
+        }
+      },
+      {
+        left: {
+          layout: 'image',
+          body: 'Monthly forums where scholars, officers, and activists share insights.',
+          imageSrc: 'placeholder',
+          imageAlt: 'Dr. Ambedkar Academy gallery photograph 4'
+        },
+        right: {
+          layout: 'image',
+          body: 'Program snapshots from awareness seminars and social initiatives.',
+          imageSrc: 'placeholder',
+          imageAlt: 'Dr. Ambedkar Academy gallery photograph 5'
         }
       }
     ]
   },
   {
-    id: 'members',
-    label: 'Members',
+    id: 'management',
+    label: 'Management',
     pages: [
       {
         left: {
-          title: 'Members',
-          body: 'A community of educators, advocates, and volunteers.'
+          title: 'Management',
+          body:
+            'The Trust is managed by people of eminence commanding high respect in society. The management comprises the Managing Trustee and 24 Trustees drawn from diverse fields.'
         },
         right: {
-          title: 'Join Us',
-          body: 'Contribute your time, expertise, or support to extend our mission.'
+          layout: 'image',
+          imageSrc: 'placeholder',
+          imageAlt: 'Thiru C. Chellappan, IAS Retired photograph',
+          subTitle: 'Thiru C. Chellappan, IAS (Retd.)',
+          body:
+            'Former Secretary to the Government of Tamil Nadu, former Member of TNPSC, and former Member of the National Commission for Scheduled Castes & Scheduled Tribes, serves as the Managing Trustee.'
+        }
+      },
+      {
+        left: {
+          layout: 'image',
+          imageSrc: 'placeholder',
+          imageAlt: 'Thiru J. Ramalinga photograph',
+          subTitle: 'Thiru J. Ramalingam',
+          body:
+            'Thiru J. Ramalingam, former Member of TNPSC and former expert with the United Nations (FAO), is the Secretary-General of Dr. Ambedkar Academy.',
+        },
+        right: {
+          layout: 'image',
+          imageSrc: 'placeholder',
+          imageAlt: 'Dr. A. Padmanaban, IAS (Retd.) photograph',
+          subTitle: 'Dr. A. Padmanaban, IAS (Retd.)',
+          body: 'Dr. A. Padmanaban, IAS (Retd.) is the chief architect of the Trust. He has served as Governor of Mizoram, Chief Secretary to the Government of Tamil Nadu, Adviser to the Governor of Tamil Nadu, Member of UPSC, and President of the World Poet Organisation.',
         }
       }
     ]
@@ -98,8 +152,10 @@ export default function ScrollScene() {
   const textTimelineRef = useRef(null);
   const lineTweenRef = useRef(null);
   const closeTimeoutRef = useRef(null);
+  const academyNavTimeoutRef = useRef(null);
+  const ignoreScrollUntilRef = useRef(0);
   const bookStateRef = useRef('closed');
-  const [activeTab, setActiveTab] = useState('history');
+  const [activeTab, setActiveTab] = useState('about');
   const [pageIndex, setPageIndex] = useState(0);
   const [isLeftHalfVisible, setIsLeftHalfVisible] = useState(false);
 
@@ -451,6 +507,11 @@ export default function ScrollScene() {
     let acc = 0;
 
     const onScroll = () => {
+      if (Date.now() < ignoreScrollUntilRef.current) {
+        lastY = window.scrollY;
+        return;
+      }
+
       const y = window.scrollY;
       const delta = y - lastY;
       lastY = y;
@@ -474,6 +535,9 @@ export default function ScrollScene() {
     return () => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('scroll', onScroll);
+      if (academyNavTimeoutRef.current) {
+        window.clearTimeout(academyNavTimeoutRef.current);
+      }
       cancelCloseTimer();
       ctx?.revert();
     };
@@ -481,13 +545,10 @@ export default function ScrollScene() {
 
   const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) ?? TAB_CONFIG[0];
   const activePages = activeTabConfig.pages;
+  const lastTabId = TAB_CONFIG[TAB_CONFIG.length - 1]?.id;
   const currentPage = activePages[pageIndex] ?? activePages[0];
-  const showPrev = !(activeTab === 'history' && pageIndex === 0);
-  const showNext =
-    pageIndex < activePages.length - 1 ||
-    (activeTab === 'history' && pageIndex === activePages.length - 1) ||
-    (activeTab === 'impact' && pageIndex === activePages.length - 1) ||
-    (activeTab === 'members' && pageIndex === activePages.length - 1);
+  const showPrev = !(activeTab === 'about' && pageIndex === 0);
+  const showNext = pageIndex < activePages.length - 1 || activeTab !== lastTabId;
 
   const handleNext = (event) => {
     event?.stopPropagation?.();
@@ -496,11 +557,11 @@ export default function ScrollScene() {
       return;
     }
 
-    if (activeTab === 'history') {
-      setActiveTab('impact');
+    if (activeTab === 'about') {
+      setActiveTab('gallery');
       setPageIndex(0);
-    } else if (activeTab === 'impact') {
-      setActiveTab('members');
+    } else if (activeTab === 'gallery') {
+      setActiveTab('management');
       setPageIndex(0);
     }
   };
@@ -512,11 +573,11 @@ export default function ScrollScene() {
       return;
     }
 
-    if (activeTab === 'impact') {
-      setActiveTab('history');
+    if (activeTab === 'gallery') {
+      setActiveTab('about');
       setPageIndex(TAB_CONFIG[0].pages.length - 1);
-    } else if (activeTab === 'members') {
-      setActiveTab('impact');
+    } else if (activeTab === 'management') {
+      setActiveTab('gallery');
       setPageIndex(TAB_CONFIG[1].pages.length - 1);
     }
   };
@@ -526,12 +587,28 @@ export default function ScrollScene() {
     setPageIndex(0);
   };
 
-  const allowCloseOnLeft = activeTab === 'history' && pageIndex === 0;
+  const allowCloseOnLeft = activeTab === 'about' && pageIndex === 0;
+
+  const handleAcademyClick = (event) => {
+    event.preventDefault();
+    ignoreScrollUntilRef.current = Date.now() + 1200;
+    rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActiveTab('about');
+    setPageIndex(0);
+    if (academyNavTimeoutRef.current) {
+      window.clearTimeout(academyNavTimeoutRef.current);
+    }
+    academyNavTimeoutRef.current = window.setTimeout(() => {
+      if (bookStateRef.current === 'closed') {
+        doOpen();
+      }
+    }, 420);
+  };
 
   return (
-    <div className="scroll-container" ref={rootRef}>
+    <div className="scroll-container" id="academy" ref={rootRef}>
       <div className="sticky-scene">
-        <Navbar ref={navbarRef} />
+        <Navbar ref={navbarRef} onAcademyClick={handleAcademyClick} />
         <SceneLines />
         <BookHero
           wrapperRef={bookWrapperRef}

@@ -75,7 +75,7 @@ export default function EventsSection() {
   const hasNext = currentPage < totalPages - 1;
 
   return (
-    <section className="events-section">
+    <section className="events-section" id="events">
       <div className="hori-line events-line-h line-brush-h" />
       <div className="events-inner">
         <div className="events-layout">

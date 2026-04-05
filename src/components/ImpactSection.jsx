@@ -138,12 +138,12 @@ export default function ImpactSection() {
     'The People’s Educational Trust – Dr. Ambedkar Academy has been rendering yeoman service to Scheduled Castes, Scheduled Tribes, women, and marginalised communities since its inception. Some of the services rendered include:';
 
   return (
-    <section className="impact-section" id="impact">
+    <section className="impact-section" id="services">
       <div className="impact-inner">
         <div className="impact-left">
-          <h2 className="impact-title">Impact</h2>
+          <h2 className="impact-title">Services</h2>
           <p className="impact-intro">{sectionIntro}</p>
-          <ul className="impact-list" aria-label="Impact points">
+          <ul className="impact-list" aria-label="Services list">
             {IMPACTS.map((impact, index) => (
               <li key={impact.id}>
                 <button
@@ -160,7 +160,7 @@ export default function ImpactSection() {
         </div>
 
         <div className="impact-right">
-          <div className="impact-stack" role="list" aria-label="Impact cards">
+          <div className="impact-stack" role="list" aria-label="Services cards">
             {deckOrder.map((impactId, index) => {
               const impact = impactMap[impactId];
               const nudge = nudges[impactId] ?? { x: 0, y: 0, r: 0 };
@@ -199,14 +199,14 @@ export default function ImpactSection() {
               );
             })}
           </div>
-          <div className="impact-controls" aria-label="Cycle impact cards">
-            <button type="button" className="impact-control-btn" onClick={handlePrev} aria-label="Previous impact">
+          <div className="impact-controls" aria-label="Cycle service cards">
+            <button type="button" className="impact-control-btn" onClick={handlePrev} aria-label="Previous service">
               <svg viewBox="0 0 24 24" fill="none" stroke="#4c2c1b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12" />
                 <polyline points="12 5 5 12 12 19" />
               </svg>
             </button>
-            <button type="button" className="impact-control-btn" onClick={handleNext} aria-label="Next impact">
+            <button type="button" className="impact-control-btn" onClick={handleNext} aria-label="Next service">
               <svg viewBox="0 0 24 24" fill="none" stroke="#4c2c1b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />

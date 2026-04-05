@@ -79,7 +79,7 @@
   padding-bottom: 3px;
 }
 
-.navbar a:not(.events-book-btn--nav)::after {
+.navbar a:not(.events-book-btn--nav):not(.navbar-brand)::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -96,7 +96,7 @@
   transition: width 0.42s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
-.navbar a:not(.events-book-btn--nav):hover::after {
+.navbar a:not(.events-book-btn--nav):not(.navbar-brand):hover::after {
   width: 100%;
 }
 
@@ -104,7 +104,7 @@ body.book-open-bg .navbar {
   color: #cccdc7;
 }
 
-body.book-open-bg .navbar a:not(.events-book-btn--nav)::after {
+body.book-open-bg .navbar a:not(.events-book-btn--nav):not(.navbar-brand)::after {
   background-color: #cccdc7;
 }
 
