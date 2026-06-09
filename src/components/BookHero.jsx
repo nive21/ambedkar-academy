@@ -46,7 +46,8 @@ export default function BookHero({
   tabs,
   activeTab,
   onTabClick,
-  allowCloseOnLeft
+  allowCloseOnLeft,
+  onContinueClick
 }) {
   const leftTone = getPageTone(leftPage);
   const rightTone = getPageTone(rightPage);
@@ -162,13 +163,18 @@ export default function BookHero({
 
         <button
           type="button"
-          className="click-close"
+          className="book-scroll-indicator"
           onClick={(event) => {
             event.stopPropagation();
-            onCloseClick?.();
+            onContinueClick?.();
           }}
+          aria-label="Scroll to the next section"
         >
-          Click to close
+          <span className="book-scroll-indicator__label">Scroll to learn more</span>
+          <span className="book-scroll-indicator__arrow" aria-hidden="true">
+            <span className="book-scroll-indicator__head book-scroll-indicator__head--left line-brush-h" />
+            <span className="book-scroll-indicator__head book-scroll-indicator__head--right line-brush-h" />
+          </span>
         </button>
       </div>
     </div>

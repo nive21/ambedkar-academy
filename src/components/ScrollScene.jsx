@@ -605,6 +605,11 @@ export default function ScrollScene() {
     }, 420);
   };
 
+  const handleContinueClick = () => {
+    ignoreScrollUntilRef.current = Date.now() + 800;
+    rootRef.current?.nextElementSibling?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="scroll-container" id="academy" ref={rootRef}>
       <div className="sticky-scene">
@@ -631,6 +636,7 @@ export default function ScrollScene() {
           activeTab={activeTab}
           onTabClick={handleTabClick}
           allowCloseOnLeft={allowCloseOnLeft}
+          onContinueClick={handleContinueClick}
         />
         <SectionBlock
           className="vision-block"
@@ -638,6 +644,8 @@ export default function ScrollScene() {
           headingRef={visionHRef}
           bodyId="visionBody"
           bodyRef={visionBRef}
+          dividerId="svgLineCenter"
+          dividerClassName="section-divider line-svg-h line-brush-h"
           heading="Our Vision"
           body="To be a change agent in developing a just and compassionate Indian society in which all people have fair and equitable opportunities to achieve their optimum potential through charitable, holistic, and sustainable development work among the marginalised, downtrodden, vulnerable, and exploited."
         />

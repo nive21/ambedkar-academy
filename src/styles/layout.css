@@ -169,13 +169,6 @@ body.book-open-bg .navbar .events-book-btn--nav:hover {
   height: 6px;
 }
 
-#svgLineCenter {
-  top: 60%;
-  left: -67px;
-  width: 491px;
-  height: 6px;
-}
-
 #svgLineLeftWrap {
   left: calc(20% + 168px);
   top: var(--nav-bottom);

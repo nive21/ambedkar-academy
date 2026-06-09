@@ -5,13 +5,16 @@ export default function SectionBlock({
   headingRef,
   body,
   bodyId,
-  bodyRef
+  bodyRef,
+  dividerId,
+  dividerClassName
 }) {
   return (
     <section className={className}>
       <div className="heading-text" id={headingId} ref={headingRef}>
         {heading}
       </div>
+      {dividerId ? <div id={dividerId} className={dividerClassName} aria-hidden="true" /> : null}
       <div className="body-text" id={bodyId} ref={bodyRef}>
         {body}
       </div>

@@ -98,6 +98,96 @@
   pointer-events: auto;
 }
 
+.book-scroll-indicator {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 44px);
+  transform: translateX(-50%) translateY(-10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 88px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: rgba(var(--color-bg-rgb) / 0.9);
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  z-index: 15;
+  --indicator-ease: var(--ease-in);
+  transition:
+    opacity calc(0.18s * var(--anim-speed)) var(--indicator-ease),
+    transform calc(0.22s * var(--anim-speed)) var(--indicator-ease);
+}
+
+.open-book.book-visible ~ .book-scroll-indicator {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+  --indicator-ease: var(--ease-out);
+}
+
+.book-scroll-indicator__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.book-scroll-indicator__arrow {
+  position: relative;
+  width: 30px;
+  height: 20px;
+  transition: transform calc(0.18s * var(--anim-speed)) var(--ease-in-out);
+}
+
+.book-scroll-indicator__head {
+  position: absolute;
+  bottom: 5px;
+  width: 16px;
+  height: 4px;
+  background-color: currentColor;
+  transform-origin: center;
+  transition: transform calc(0.18s * var(--anim-speed)) var(--ease-in-out);
+}
+
+.book-scroll-indicator__head--left {
+  left: 3px;
+  transform: rotate(42deg);
+}
+
+.book-scroll-indicator__head--right {
+  right: 3px;
+  transform: rotate(-42deg);
+}
+
+.book-scroll-indicator:hover .book-scroll-indicator__arrow,
+.book-scroll-indicator:focus-visible .book-scroll-indicator__arrow {
+  transform: translateY(4px);
+}
+
+.book-scroll-indicator:hover .book-scroll-indicator__head--left,
+.book-scroll-indicator:focus-visible .book-scroll-indicator__head--left {
+  transform: rotate(48deg) translateY(1px);
+}
+
+.book-scroll-indicator:hover .book-scroll-indicator__head--right,
+.book-scroll-indicator:focus-visible .book-scroll-indicator__head--right {
+  transform: rotate(-48deg) translateY(1px);
+}
+
+.book-scroll-indicator:focus-visible {
+  outline: none;
+}
+
+.book-scroll-indicator:focus-visible .book-scroll-indicator__label {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 @keyframes pulse {
   0%,
   100% {

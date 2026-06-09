@@ -4,6 +4,14 @@
   z-index: 5;
 }
 
+.vision-block .heading-text,
+.vision-block .body-text,
+.mission-block .heading-text,
+.mission-block .body-text {
+  position: relative;
+  z-index: 1;
+}
+
 .vision-block {
   position: absolute;
   left: 36px;
@@ -13,6 +21,15 @@
   flex-direction: column;
   gap: 58px;
   font-style: normal;
+}
+
+.vision-block .section-divider {
+  position: relative;
+  left: clamp(-67px, -5vw, -24px);
+  width: clamp(320px, 42vw, 491px);
+  height: 6px;
+  flex: 0 0 auto;
+  z-index: 0;
 }
 
 .mission-block {
@@ -75,7 +92,12 @@
   .vision-block {
     left: 24px;
     width: 320px;
-    gap: 36px;
+    gap: 24px;
+  }
+
+  .vision-block .section-divider {
+    left: clamp(-40px, -4vw, -16px);
+    width: clamp(280px, 40vw, 420px);
   }
 
   .mission-block {
@@ -94,7 +116,12 @@
     top: 60%;
     left: 8%;
     width: 84%;
-    gap: 24px;
+    gap: 16px;
+  }
+
+  .vision-block .section-divider {
+    left: 0;
+    width: min(100%, 420px);
   }
 
   .mission-block {
