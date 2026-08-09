@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 const qualificationOptions = [
   'Class 10',
@@ -163,6 +164,8 @@ export default function ApplyPage() {
   const [touchedFields, setTouchedFields] = useState({});
   const [selectedExams, setSelectedExams] = useState([]);
   const [formStatus, setFormStatus] = useState('');
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function validateField(name, value, nextValues = formValues) {
     const error = getFieldError(name, value, nextValues);
@@ -197,6 +200,7 @@ export default function ApplyPage() {
 
     setFormValues(nextValues);
     setFormStatus('');
+    setFormError('');
 
     if (touchedFields[name]) {
       validateField(name, nextValues[name], nextValues);
@@ -224,7 +228,7 @@ export default function ApplyPage() {
     );
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const errors = getAllErrors(formValues);
     setTouchedFields(
@@ -237,10 +241,53 @@ export default function ApplyPage() {
 
     if (Object.keys(errors).length > 0) {
       setFormStatus('');
+      setFormError('Please correct the highlighted fields before submitting.');
       return;
     }
 
-    setFormStatus('Application form details captured. Online submission workflow can be connected next.');
+    setIsSubmitting(true);
+    setFormError('');
+
+    try {
+      const payload = {
+        full_name: formValues.candidateFullName.trim(),
+        date_of_birth: formValues.dateOfBirth,
+        gender: formValues.gender,
+        permanent_address: formValues.permanentAddress.trim(),
+        city: formValues.city.trim(),
+        pincode: formValues.pincode,
+        email: formValues.email.trim(),
+        contact_number: formValues.contactNumber,
+        aadhar_number: formValues.aadharNumber,
+        educational_qualification: formValues.qualification,
+        community: formValues.community,
+        mother_name: formValues.motherName.trim(),
+        mother_occupation: formValues.motherOccupation.trim(),
+        father_name: formValues.fatherName.trim(),
+        father_occupation: formValues.fatherOccupation.trim(),
+        tnpsc_exams: selectedExams,
+        previous_coaching: formValues.previousCoaching === 'yes',
+        previous_coaching_year:
+          formValues.previousCoaching === 'yes' ? Number(formValues.previousCoachingYear) : null
+      };
+
+      const { error } = await supabase.from('group_iv_applications_2026').insert(payload);
+
+      if (error) {
+        throw new Error(error.message || 'Unable to submit application.');
+      }
+
+      setFormValues(initialFormValues);
+      setTouchedFields({});
+      setFieldErrors({});
+      setSelectedExams([]);
+      setFormStatus('Application submitted successfully.');
+    } catch (error) {
+      setFormStatus('');
+      setFormError(error instanceof Error ? error.message : 'Unable to submit application.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -259,9 +306,9 @@ export default function ApplyPage() {
           <p className="book-hall-form-note apply-page__notice">
             Dr. Ambedkar Academy is offering free coaching for TNPSC Group IV exams to SC and ST candidates. Deserving candidates will be provided free residential facilities. Eligible candidates are encouraged to apply and attend the interview.
             <br /><br />
-            Candidates must submit their forms by August 15, 2026 and attend the interview in person at Dr Ambedkar
+            Candidates must submit their forms by August 15, 2026 and attend the interview in person at <i>Dr Ambedkar
             Academy, The People&apos;s Educational Trust, 73, L-Block, 24th Street, Anna Nagar
-            East, Chennai 600 102. Interviews will be held on August 16 and August 17, 2026.
+            East, Chennai 600 102</i>. Interviews will be held on August 16 and August 17, 2026.
             <br /><br />
             Please bring your Aadhar card, a passport-size photograph,
             education proof, and community certificate. Classes for selected candidates will
@@ -560,11 +607,12 @@ export default function ApplyPage() {
               ) : null}
             </fieldset>
 
+            {formError ? <p className="book-hall-status book-hall-status--error">{formError}</p> : null}
             {formStatus ? <p className="book-hall-status book-hall-status--success">{formStatus}</p> : null}
 
             <div className="book-hall-submit-row">
-              <button className="book-hall-submit" type="submit">
-                Submit Application
+              <button className="book-hall-submit" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Submit Application'}
               </button>
             </div>
           </form>

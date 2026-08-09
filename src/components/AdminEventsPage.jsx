@@ -2,6 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const ADMIN_EMAIL = import.meta.env.VITE_BOOKING_ADMIN_EMAIL;
+const INTERVIEW_STATUS_OPTIONS = [
+  { value: 'not-held-yet', label: 'Not held yet' },
+  { value: 'accepted', label: 'Accepted' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'in-review', label: 'In review' }
+];
 
 function defaultEventFormState() {
   return {
@@ -27,15 +33,23 @@ function slotLabel(slot) {
   return 'Full Day';
 }
 
+function interviewStatusLabel(status) {
+  return INTERVIEW_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? 'Not held yet';
+}
+
 export default function AdminEventsPage() {
   const [accessKey, setAccessKey] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState('bookings');
   const [events, setEvents] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [applicationsError, setApplicationsError] = useState('');
   const [eventDrafts, setEventDrafts] = useState({});
   const [denyReasons, setDenyReasons] = useState({});
   const [bookingMessages, setBookingMessages] = useState({});
+  const [applicationMessages, setApplicationMessages] = useState({});
+  const [openApplicationId, setOpenApplicationId] = useState(null);
   const [newEvent, setNewEvent] = useState(defaultEventFormState());
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -62,16 +76,30 @@ export default function AdminEventsPage() {
   async function loadDashboardData() {
     setLoading(true);
     setError('');
+    setApplicationsError('');
     try {
-      const [eventsData, bookingsData] = await Promise.all([
+      const [eventsResult, bookingsResult, applicationsResult] = await Promise.allSettled([
         callAdmin('list-events'),
-        callAdmin('list-bookings')
+        callAdmin('list-bookings'),
+        callAdmin('list-group-iv-applications')
       ]);
 
-      const eventRows = eventsData?.events ?? [];
-      const bookingRows = bookingsData?.bookings ?? [];
+      if (eventsResult.status === 'rejected') {
+        throw eventsResult.reason;
+      }
+
+      if (bookingsResult.status === 'rejected') {
+        throw bookingsResult.reason;
+      }
+
+      const eventRows = eventsResult.value?.events ?? [];
+      const bookingRows = bookingsResult.value?.bookings ?? [];
+      const applicationRows =
+        applicationsResult.status === 'fulfilled' ? applicationsResult.value?.applications ?? [] : [];
+
       setEvents(eventRows);
       setBookings(bookingRows);
+      setApplications(applicationRows);
       setEventDrafts(
         eventRows.reduce((acc, eventItem) => {
           acc[eventItem.id] = {
@@ -90,6 +118,15 @@ export default function AdminEventsPage() {
           return acc;
         }, {})
       );
+      setOpenApplicationId((current) =>
+        applicationRows.some((application) => application.id === current) ? current : null
+      );
+
+      if (applicationsResult.status === 'rejected') {
+        setApplicationsError(
+          applicationsResult.reason?.message || 'Group IV applications could not be loaded.'
+        );
+      }
     } catch (err) {
       setError(err.message || 'Unable to load admin dashboard data.');
     } finally {
@@ -125,11 +162,39 @@ export default function AdminEventsPage() {
     }));
   }
 
+  function setApplicationMessage(applicationId, type, message) {
+    setApplicationMessages((prev) => ({
+      ...prev,
+      [applicationId]: { type, message }
+    }));
+  }
+
   function statusLabel(status) {
     if (status === 'approved') return 'Approved';
     if (status === 'rejected') return 'Denied';
     if (status === 'cancelled') return 'Cancelled';
     return 'Pending';
+  }
+
+  async function handleApplicationStatusChange(applicationId, status) {
+    clearStatus();
+    setLoading(true);
+    try {
+      await callAdmin('set-group-iv-application-status', {
+        id: applicationId,
+        status
+      });
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId ? { ...application, interview_status: status } : application
+        )
+      );
+      setApplicationMessage(applicationId, 'success', 'Interview status updated.');
+    } catch (err) {
+      setApplicationMessage(applicationId, 'error', err.message || 'Unable to update interview status.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleUnlock(event) {
@@ -318,6 +383,14 @@ export default function AdminEventsPage() {
                 disabled={loading}
               >
                 Admin Events
+              </button>
+              <button
+                type="button"
+                className={activeTab === 'group-iv-applications' ? 'is-active' : ''}
+                onClick={() => setActiveTab('group-iv-applications')}
+                disabled={loading}
+              >
+                Group IV Applications 2026
               </button>
             </div>
 
@@ -597,6 +670,114 @@ export default function AdminEventsPage() {
                   })}
                 </section>
               </>
+            ) : null}
+
+            {activeTab === 'group-iv-applications' ? (
+              <section className="admin-events-list">
+                <h2>Group IV Applications 2026</h2>
+                {applicationsError ? (
+                  <p className="admin-events-status admin-events-status--error">{applicationsError}</p>
+                ) : null}
+                {applications.length === 0 ? (
+                  <p className="admin-events-empty">No applications submitted yet.</p>
+                ) : null}
+                {applications.map((application) => {
+                  const isOpen = openApplicationId === application.id;
+                  const statusMessage = applicationMessages[application.id];
+
+                  return (
+                    <article
+                      key={application.id}
+                      className={`admin-events-item admin-application-item${isOpen ? ' is-open' : ''}`}
+                    >
+                      <div className="admin-application-summary">
+                        <button
+                          type="button"
+                          className="admin-application-toggle"
+                          onClick={() =>
+                            setOpenApplicationId((current) => (current === application.id ? null : application.id))
+                          }
+                          aria-expanded={isOpen}
+                          aria-controls={`group-iv-application-${application.id}`}
+                        >
+                          <span className="admin-application-toggle__name">{application.full_name}</span>
+                          <span className="admin-application-toggle__meta">
+                            {application.gender} · Applied on {formatDate(application.created_at.split('T')[0])}
+                          </span>
+                        </button>
+
+                        <div className="admin-application-actions">
+                          <label className="admin-application-status-picker">
+                            <span>Interview Status</span>
+                            <select
+                              value={application.interview_status}
+                              onChange={(event) =>
+                                handleApplicationStatusChange(application.id, event.target.value)
+                              }
+                              disabled={loading}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {INTERVIEW_STATUS_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <span
+                            className={`admin-booking-status admin-booking-status--application admin-booking-status--${application.interview_status}`}
+                          >
+                            {interviewStatusLabel(application.interview_status)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {statusMessage ? (
+                        <p
+                          className={`admin-inline-status ${
+                            statusMessage.type === 'error'
+                              ? 'admin-inline-status--error'
+                              : 'admin-inline-status--success'
+                          }`}
+                          aria-live="polite"
+                        >
+                          {statusMessage.message}
+                        </p>
+                      ) : null}
+
+                      {isOpen ? (
+                        <div
+                          id={`group-iv-application-${application.id}`}
+                          className="admin-application-details"
+                        >
+                          <p><strong>Date of Birth:</strong> {formatDate(application.date_of_birth)}</p>
+                          <p><strong>Permanent Address:</strong> {application.permanent_address}</p>
+                          <p><strong>City:</strong> {application.city} · <strong>Pincode:</strong> {application.pincode}</p>
+                          <p><strong>Email:</strong> {application.email} · <strong>Contact:</strong> {application.contact_number}</p>
+                          <p><strong>Aadhar Number:</strong> {application.aadhar_number}</p>
+                          <p><strong>Educational Qualification:</strong> {application.educational_qualification}</p>
+                          <p><strong>Community:</strong> {application.community}</p>
+                          <p><strong>Mother's Name:</strong> {application.mother_name}</p>
+                          <p><strong>Mother's Occupation:</strong> {application.mother_occupation}</p>
+                          <p><strong>Father's Name:</strong> {application.father_name}</p>
+                          <p><strong>Father's Occupation:</strong> {application.father_occupation}</p>
+                          <p>
+                            <strong>Previous TNPSC Examinations:</strong>{' '}
+                            {application.tnpsc_exams?.length ? application.tnpsc_exams.join(', ') : 'None mentioned'}
+                          </p>
+                          <p>
+                            <strong>Previously attended Ambedkar Academy coaching:</strong>{' '}
+                            {application.previous_coaching ? 'Yes' : 'No'}
+                          </p>
+                          {application.previous_coaching ? (
+                            <p><strong>Previous Coaching Year:</strong> {application.previous_coaching_year}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </article>
+                  );
+                })}
+              </section>
             ) : null}
           </>
         )}

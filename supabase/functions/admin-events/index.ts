@@ -270,6 +270,42 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
+    if (body?.action === 'list-group-iv-applications') {
+      const { data, error } = await adminClient
+        .from('group_iv_applications_2026')
+        .select(
+          'id, full_name, date_of_birth, gender, permanent_address, city, pincode, email, contact_number, aadhar_number, educational_qualification, community, mother_name, mother_occupation, father_name, father_occupation, tnpsc_exams, previous_coaching, previous_coaching_year, interview_status, created_at'
+        )
+        .order('created_at', { ascending: false });
+
+      if (error) throw new Error(error.message);
+      return new Response(JSON.stringify({ applications: data ?? [] }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (body?.action === 'set-group-iv-application-status') {
+      if (!body?.id) throw new Error('Missing application id.');
+      if (!['not-held-yet', 'accepted', 'rejected', 'in-review'].includes(body?.status)) {
+        throw new Error('Invalid interview status.');
+      }
+
+      const { error } = await adminClient
+        .from('group_iv_applications_2026')
+        .update({
+          interview_status: body.status
+        })
+        .eq('id', body.id);
+
+      if (error) throw new Error(error.message);
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     if (body?.action === 'set-booking-status') {
       if (!body?.id) throw new Error('Missing booking id.');
       if (!['approved', 'rejected'].includes(body?.status)) {
