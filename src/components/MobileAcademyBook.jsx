@@ -16,9 +16,9 @@ function flattenTabPages(tab) {
   return tab.pages.flatMap((spread) => [spread.left, spread.right]);
 }
 
-function MobileBookEntry({ entry }) {
+function MobileBookEntry({ entry, className = '' }) {
   return (
-    <section className="mobile-book-entry">
+    <section className={['mobile-book-entry', className].filter(Boolean).join(' ')}>
       {entry.title ? <h4 className="mobile-book-entry__title">{stripHtml(entry.title)}</h4> : null}
       {entry.yearTitle ? <div className="mobile-book-entry__year">{entry.yearTitle}</div> : null}
       {entry.imageSrc ? (
@@ -46,6 +46,7 @@ export default function MobileAcademyBook() {
   const activePage = pages[pageIndex] ?? pages[0];
   const canGoPrev = pageIndex > 0 || activeTabIndex > 0;
   const canGoNext = pageIndex < pages.length - 1 || activeTabIndex < ACADEMY_TABS.length - 1;
+  const isSectionIntroPage = pageIndex === 0;
 
   const handlePrev = () => {
     if (pageIndex > 0) {
@@ -112,6 +113,7 @@ export default function MobileAcademyBook() {
           <div className="mobile-academy-book__content">
             {activePage ? (
               <MobileBookEntry
+                className={isSectionIntroPage ? 'is-centered' : ''}
                 key={activePage.title ?? activePage.yearTitle ?? activePage.subTitle ?? activePage.body}
                 entry={activePage}
               />

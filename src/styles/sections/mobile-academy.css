@@ -209,11 +209,18 @@
     min-height: 0;
     overflow-y: auto;
     padding-right: 4px;
+    display: flex;
+    flex-direction: column;
   }
 
   .mobile-book-entry {
     display: grid;
     gap: 10px;
+  }
+
+  .mobile-book-entry.is-centered {
+    flex: 1;
+    align-content: center;
   }
 
   .mobile-book-entry__title {

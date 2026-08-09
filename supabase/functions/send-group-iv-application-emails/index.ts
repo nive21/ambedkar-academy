@@ -86,8 +86,10 @@ serve(async (req: Request): Promise<Response> => {
 <p>Your Group IV coaching application has been received by Dr. Ambedkar Academy.</p>
 <p><strong>Application ID:</strong> ${applicationId}<br />
 <strong>Educational Qualification:</strong> ${qualification}</p>
-<p>Please attend the in-person interview on August 16 or August 17, 2026 at Dr. Ambedkar Academy, The People's Educational Trust, 73, L-Block, 24th Street, Anna Nagar East, Chennai 600 102.</p>
+<p>Please attend the in-person interview on August 16 or August 17, 2026 from 10:00 AM to 6:00 PM at Dr. Ambedkar Academy, The People's Educational Trust, 73, L-Block, 24th Street, Anna Nagar East, Chennai 600 102.</p>
 <p>Kindly bring your Aadhar card, passport-size photograph, education proof, and community certificate.</p>
+<p>Selected candidates are expected to join the classes from <strong>August 20, 2026</strong>.</p>
+<p>For any queries, please contact us at cchellappanias@gmail.com or call +91-9444244362.</p>
 <p>Thank you.</p>`
       },
       {

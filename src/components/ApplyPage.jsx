@@ -337,15 +337,20 @@ export default function ApplyPage() {
           <h2 className="book-hall-form-title">Group IV Coaching Application</h2>
 
           <p className="book-hall-form-note apply-page__notice">
-            Dr. Ambedkar Academy is offering free coaching for TNPSC Group IV exams to SC and ST candidates. Deserving candidates will be provided free residential facilities. Eligible candidates are encouraged to apply and attend the interview.
+            Dr. Ambedkar Academy is offering <strong>free coaching for the TNPSC Group IV examination</strong> to SC and ST candidates for 4 months starting August 20, 2026. Selected candidates will be provided with free boarding and lodging.
+            Eligible candidates are encouraged to apply and attend the interview.
             <br /><br />
-            Candidates must submit their forms by August 15, 2026 and attend the interview in person at <i>Dr Ambedkar
-            Academy, The People&apos;s Educational Trust, 73, L-Block, 24th Street, Anna Nagar
-            East, Chennai 600 102</i>. Interviews will be held on August 16 and August 17, 2026.
+            Applications must be submitted by <strong>August 16, 2026</strong>. Candidates must attend the interview in person at <i>
+              Dr. Ambedkar Academy, The People's Educational Trust, 73, L-Block,
+              24th Street, Anna Nagar East, Chennai – 600 102
+            </i>.
+            Interviews will be held on <strong>August 18 and 19, 2026, from 10:00 AM to 6:00 PM</strong>.
             <br /><br />
-            Please bring your Aadhar card, a passport-size photograph,
-            education proof, and community certificate. Classes for selected candidates will
-            commence on August 18, 2026.
+            Please bring your <strong>Aadhaar card, passport-size photograph, proof of educational qualification,
+            and community certificate</strong> to the interview.
+            Selected candidates are expected to join the classes from <strong>August 20, 2026</strong>. 
+            <br /><br />
+            For any queries, please contact us at <a className="apply-page__link" href="mailto:cchellappanias@gmail.com">cchellappanias@gmail.com</a> or call +91-9444244362.
           </p>
 
           <form className="book-hall-form" onSubmit={handleSubmit} noValidate>

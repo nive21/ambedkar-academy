@@ -19,6 +19,19 @@
   color: var(--color-bg);
 }
 
+.apply-page__link {
+  color: var(--color-sand);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+  transition: color 0.2s ease;
+}
+
+.apply-page__link:hover,
+.apply-page__link:focus-visible {
+  color: var(--color-bg);
+}
+
 .apply-page__field-hint {
   font-size: 12px;
   line-height: 1.45;

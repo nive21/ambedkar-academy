@@ -160,7 +160,12 @@ export default function ImpactSection() {
                 </option>
               ))}
             </select>
-            <span className="impact-select-arrow" aria-hidden="true" />
+            <span className="impact-select-arrow" aria-hidden="true">
+              <svg viewBox="0 0 20 14" fill="none">
+                <path d="M1.5 3.5C4.1 5.4 6.1 7.5 9.3 10.6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                <path d="M18.5 3.5C15.9 5.4 13.9 7.5 10.7 10.6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+              </svg>
+            </span>
           </div>
           <ul className="impact-list" aria-label="Services list">
             {IMPACTS.map((impact, index) => (
