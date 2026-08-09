@@ -700,6 +700,9 @@ export default function AdminEventsPage() {
                           aria-expanded={isOpen}
                           aria-controls={`group-iv-application-${application.id}`}
                         >
+                          <span className={`admin-application-toggle__arrow${isOpen ? ' is-open' : ''}`} aria-hidden="true">
+                            ▸
+                          </span>
                           <span className="admin-application-toggle__name">{application.full_name}</span>
                           <span className="admin-application-toggle__meta">
                             {application.gender} · Applied on {formatDate(application.created_at.split('T')[0])}

@@ -271,17 +271,50 @@ export default function ApplyPage() {
           formValues.previousCoaching === 'yes' ? Number(formValues.previousCoachingYear) : null
       };
 
-      const { error } = await supabase.from('group_iv_applications_2026').insert(payload);
+      const { data: applicationData, error } = await supabase
+        .from('group_iv_applications_2026')
+        .insert(payload)
+        .select('id')
+        .single();
 
       if (error) {
         throw new Error(error.message || 'Unable to submit application.');
+      }
+
+      const { error: emailError } = await supabase.functions.invoke('send-group-iv-application-emails', {
+        body: {
+          applicationId: applicationData.id,
+          fullName: payload.full_name,
+          userEmail: payload.email,
+          adminEmail: import.meta.env.VITE_BOOKING_ADMIN_EMAIL,
+          dateOfBirth: payload.date_of_birth,
+          gender: payload.gender,
+          permanentAddress: payload.permanent_address,
+          city: payload.city,
+          pincode: payload.pincode,
+          contactNumber: payload.contact_number,
+          aadharNumber: payload.aadhar_number,
+          qualification: payload.educational_qualification,
+          community: payload.community,
+          motherName: payload.mother_name,
+          motherOccupation: payload.mother_occupation,
+          fatherName: payload.father_name,
+          fatherOccupation: payload.father_occupation,
+          tnpscExams: payload.tnpsc_exams,
+          previousCoaching: payload.previous_coaching,
+          previousCoachingYear: payload.previous_coaching_year
+        }
+      });
+
+      if (emailError) {
+        throw new Error(`Application submitted, but email notification failed: ${emailError.message}`);
       }
 
       setFormValues(initialFormValues);
       setTouchedFields({});
       setFieldErrors({});
       setSelectedExams([]);
-      setFormStatus('Application submitted successfully.');
+      setFormStatus('Application submitted successfully. Confirmation emails have been sent to you and the admin.');
     } catch (error) {
       setFormStatus('');
       setFormError(error instanceof Error ? error.message : 'Unable to submit application.');
