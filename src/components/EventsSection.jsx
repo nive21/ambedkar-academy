@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookHall } from './BookHall';
+import { ApplyForCoaching } from './ApplyForCoaching';
 import { supabase } from '../lib/supabaseClient';
 
 const EVENTS_PER_PAGE = 3;
@@ -81,7 +82,8 @@ export default function EventsSection() {
         <div className="events-layout">
           <div className="events-page" aria-label="Upcoming events">
             <div className="events-card">
-              <BookHall />
+              {/* <BookHall /> */}
+              <ApplyForCoaching />
 
               <div className="events-title">
                 <p>Upcoming</p>

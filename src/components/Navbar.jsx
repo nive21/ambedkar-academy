@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import { BookHall } from './BookHall.jsx';
+import { ApplyForCoaching } from './ApplyForCoaching.jsx';
 
 const Navbar = forwardRef(function Navbar({ onAcademyClick }, ref) {
   return (
@@ -10,7 +11,8 @@ const Navbar = forwardRef(function Navbar({ onAcademyClick }, ref) {
       <a className="navbar-link" href="#academy" onClick={onAcademyClick}>About Dr.Ambedkar Academy</a>
       <a className="navbar-link" href="#services">Services</a>
       <a className="navbar-link" href="#events">Events</a>
-      <BookHall className="events-book-btn--nav" />
+      {/* <BookHall className="events-book-btn--nav" /> */}
+      <ApplyForCoaching className="events-book-btn--nav" />
     </nav>
   );
 });
