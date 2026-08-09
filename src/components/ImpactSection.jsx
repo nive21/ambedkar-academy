@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react';
+import endowmentImage from '../assets/services/ambedkar-endowment.jpeg';
+import cashAwardsImage from '../assets/services/annual-cash-awards.png';
+import monthlyMeetingsImage from '../assets/services/monthly-meetings.jpeg';
 
 const PAPER_COLORS = ['#D7B4A2', '#EAE3D9', '#CCCDC7', '#D5B3B2'];
 
@@ -8,63 +11,69 @@ const IMPACTS = [
     title: 'Monthly Meetings',
     text:
       'Monthly meetings held regularly on the second day of every month at the Trust building, inviting eminent political leaders, serving and retired bureaucrats, distinguished social activists, and scholars to address issues concerning the welfare of SCs, STs, OBCs, women, etc., with special reference to contemporary issues.',
-    hasImageSpace: true
+    hasImageSpace: true,
+    imageSrc: monthlyMeetingsImage,
+    imageAlt: 'Monthly meeting at Dr. Ambedkar Academy'
   },
   {
     id: 'coaching',
     title: 'Free Coaching',
     text:
       'Free coaching for SC/ST candidates for competitive examinations conducted by TNPSC, Banking Service Commission, etc.',
-    hasImageSpace: true
+    hasImageSpace: false
   },
   {
     id: 'cash-awards',
     title: 'Annual Cash Awards',
     text:
       'Annual cash awards to students securing the highest marks in the 10th and 12th standard examinations who studied in schools maintained by the Adi Dravidar and Tribal Welfare Department across Tamil Nadu.',
-    hasImageSpace: true
+    hasImageSpace: true,
+    imageSrc: cashAwardsImage,
+    imageAlt: 'Annual cash awards event for state toppers'
   },
   {
     id: 'endowment',
     title: 'Ambedkar Endowment',
     text:
       'Institution of the Dr. Ambedkar Endowment at the University of Madras. Every year, the University conducts the Dr. Ambedkar Endowment Lecture, inviting eminent scholars to deliver lectures on the philosophy and thoughts of Dr. B. R. Ambedkar.',
-    hasImageSpace: true
+    hasImageSpace: true,
+    imageSrc: endowmentImage,
+    imageAlt: 'Dr. Ambedkar Endowment event'
   },
   {
     id: 'seminars-workshops',
     title: 'Seminars And Workshops',
     text:
       'Seminars and workshops creating awareness about important government schemes and programmes such as the Special Component Plan for SCs, schemes implemented by TAHDCO, NSFDC, etc.',
-    hasImageSpace: true
+    hasImageSpace: false
   },
   {
     id: 'trustee-engagement',
     title: 'Periodic Engagement',
     text:
       'Periodic engagement by the Managing Trustee and Trustees with authorities on issues affecting the socio-educational and economic development of SCs, STs, OBCs, women, etc.',
-    hasImageSpace: true
+    hasImageSpace: false
   },
   {
     id: 'atrocity-cases',
     title: 'Atrocity Cases',
     text:
       'Taking up cases of atrocities perpetrated against SC/ST communities with authorities such as District Superintendents of Police, District Collectors, and other concerned officers.',
-    hasImageSpace: true
+    hasImageSpace: false
   },
   {
     id: 'policy-intervention',
     title: 'Policy Intervention',
     text:
       'Raising matters requiring policy intervention with the government through prominent political leaders.',
-    hasImageSpace: true
+    hasImageSpace: false
   },
   {
     id: 'remedies',
     title: 'Pursuing Remedies',
     text:
       'Addressing all issues affecting the socio-educational and economic development of Scheduled Castes and other marginalised people by pursuing suitable remedies with the concerned authorities.',
-    hasImageSpace: true
+    hasImageSpace: false
   }
 ];
 
@@ -218,7 +227,11 @@ export default function ImpactSection() {
                     <h3>{impact.title}</h3>
                     <p>{impact.text}</p>
                   </div>
-                  {impact.hasImageSpace ? <div className="impact-card-image-space" aria-hidden="true" /> : null}
+                  {impact.hasImageSpace ? (
+                    <div className="impact-card-image-space">
+                      {impact.imageSrc ? <img src={impact.imageSrc} alt={impact.imageAlt ?? ''} /> : null}
+                    </div>
+                  ) : null}
                 </article>
               );
             })}

@@ -23,7 +23,7 @@ function MobileBookEntry({ entry, className = '' }) {
       {entry.yearTitle ? <div className="mobile-book-entry__year">{entry.yearTitle}</div> : null}
       {entry.imageSrc ? (
         <div className="mobile-book-entry__image" role="img" aria-label={entry.imageAlt ?? 'Image placeholder'}>
-          <span>Image Placeholder</span>
+          {entry.imageSrc === 'placeholder' ? <span>Image Placeholder</span> : <img src={entry.imageSrc} alt={entry.imageAlt ?? ''} />}
         </div>
       ) : null}
       {entry.subTitle ? <p className="mobile-book-entry__subtitle">{entry.subTitle}</p> : null}

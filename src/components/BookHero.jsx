@@ -26,6 +26,16 @@ function getPageTone(page) {
   return {};
 }
 
+function BookPageImage({ imageSrc, imageAlt }) {
+  if (!imageSrc) return null;
+
+  return (
+    <div className="book-image-placeholder" role="img" aria-label={imageAlt ?? 'Page image'}>
+      {imageSrc === 'placeholder' ? <span>Image Placeholder</span> : <img src={imageSrc} alt={imageAlt ?? ''} />}
+    </div>
+  );
+}
+
 export default function BookHero({
   wrapperRef,
   closedBookRef,
@@ -91,11 +101,7 @@ export default function BookHero({
             <div className="left-content">
               {leftPage.title ? <h1 className="page-title" dangerouslySetInnerHTML={{ __html: leftPage.title }} /> : null}
               {leftPage.yearTitle ? <div className="year-display year-display--left">{leftPage.yearTitle}</div> : null}
-              {leftPage.imageSrc ? (
-                <div className="book-image-placeholder" role="img" aria-label={leftPage.imageAlt ?? 'Image placeholder'}>
-                  <span>Image Placeholder</span>
-                </div>
-              ) : null}
+              <BookPageImage imageSrc={leftPage.imageSrc} imageAlt={leftPage.imageAlt} />
               {leftPage.subTitle ? <p className="page-subtitle">{leftPage.subTitle}</p> : null}
               {leftPage.body ? <p className="left-body">{leftPage.body}</p> : null}
               {allowCloseOnLeft ? <p className="close-hint">← click to close</p> : null}
@@ -128,11 +134,7 @@ export default function BookHero({
           <div className="right-content" style={rightSideStyle}>
             {rightPage.title ? <h2 className="page-title page-title--right">{rightPage.title}</h2> : null}
             {rightPage.yearTitle ? <div className="year-display">{rightPage.yearTitle}</div> : null}
-            {rightPage.imageSrc ? (
-              <div className="book-image-placeholder" role="img" aria-label={rightPage.imageAlt ?? 'Image placeholder'}>
-                <span>Image Placeholder</span>
-              </div>
-            ) : null}
+            <BookPageImage imageSrc={rightPage.imageSrc} imageAlt={rightPage.imageAlt} />
             {rightPage.subTitle ? <p className="page-subtitle">{rightPage.subTitle}</p> : null}
             {rightPage.body ? <p className={`description ${rightPage.imageSrc ? 'description--wide' : ''}`}>{rightPage.body}</p> : null}
             {showNext ? (

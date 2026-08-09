@@ -120,8 +120,11 @@ export default function ClosingSection() {
               </div>
             </div>
             <div className="closing-block closing-donate">
-              <div className="closing-label">Donate:</div>
-              <div className="closing-qr" aria-hidden="true" />
+              <p>
+                We appeal to you to lend a helping hand to The People's Educational Trust to carry out its activities in whatever way possible. 
+              </p>
+              {/* <div className="closing-label">Donate:</div> */}
+              {/* <div className="closing-qr" aria-hidden="true" /> */}
             </div>
           </div>
         </div>
