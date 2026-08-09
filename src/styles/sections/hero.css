@@ -46,7 +46,7 @@
 
 .heading-text {
   font-family: var(--font-serif);
-  font-size: 154px;
+  font-size: 8rem;
   line-height: 0.84;
   letter-spacing: -6.16px;
   color: var(--color-ink-strong);
@@ -71,7 +71,7 @@
 .body-text {
   font-family: var(--font-sans);
   font-weight: 400;
-  font-size: 18px;
+  font-size: 1rem;
   line-height: 1.3;
   letter-spacing: 0.72px;
   color: var(--color-ink);
@@ -101,7 +101,6 @@
   }
 
   .mission-block {
-    left: 55%;
     width: 320px;
   }
 

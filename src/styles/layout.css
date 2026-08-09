@@ -200,6 +200,10 @@ body.book-open-bg .navbar .events-book-btn--nav:hover {
 }
 
 @media (max-width: 900px) {
+  #academy {
+    display: none;
+  }
+
   .navbar {
     position: fixed;
     top: 0;

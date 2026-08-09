@@ -565,7 +565,7 @@
 
 .next-btn {
   position: absolute;
-  bottom: 42px;
+  bottom: 0px;
   right: 46px;
   width: 54px;
   height: 54px;

@@ -115,8 +115,8 @@ export default function ClosingSection() {
             <div className="closing-block">
               <div className="closing-label">Contact:</div>
               <div className="closing-contacts">
-                <span>+91-1234567890</span>
-                <span>+91-1234567890</span>
+                <span>ambedkaracademytpet@gmail.com</span>
+                {/* <span>+91-1234567890</span> */}
               </div>
             </div>
             <div className="closing-block closing-donate">

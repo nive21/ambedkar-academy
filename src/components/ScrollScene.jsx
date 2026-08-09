@@ -5,6 +5,7 @@ import Navbar from './Navbar.jsx';
 import SceneLines from './SceneLines.jsx';
 import BookHero from './BookHero.jsx';
 import SectionBlock from './SectionBlock.jsx';
+import { ACADEMY_TABS } from '../content/academyContent.js';
 import { splitBodyLines, splitHeading } from '../utils/textSplit.js';
 
 const SCROLL_THRESHOLD = 55;
@@ -18,122 +19,6 @@ const TIMING = {
   textLinesIn: 0.3 * ANIM_SPEED,
   tabs: 0.2 * ANIM_SPEED
 };
-
-const TAB_CONFIG = [
-  {
-    id: 'about',
-    label: 'About',
-    pages: [
-      {
-        left: {
-          title: 'About<br />Dr.&nbsp;Ambedkar<br />Academy',
-          body: ''
-        },
-        right: {
-          yearTitle: "'70s",
-          body:
-            "The People's Educational Trust – Dr. Ambedkar Academy is a unique organisation with the privilege of serving marginalised people for over 45 years. It blossomed from informal monthly gatherings of socially conscious intellectuals way back in the 1970s to discuss and deliberate on issues concerning the development of marginalised people."
-        }
-      },
-      {
-        left: {
-          yearTitle: '1976',
-          body: 'These monthly meetings stirred the conscience of people with social concerns, culminating in the formation of a formal society, namely the People’s Educational, Social and Cultural Society, registered in 1976 under the Societies Registration Act.'
-        },
-        right: {
-          yearTitle: '1996',
-          imageSrc: 'placeholder',
-          imageAlt: 'A Dr. Ambedkar Academy gathering (Nov 2018)',
-          body: 'In 1996, the Society was converted into The People’s Educational Trust as a public charitable trust, broadening its activities.'
-        }
-      }
-    ]
-  },
-  {
-    id: 'gallery',
-    label: 'Gallery',
-    pages: [
-      {
-        left: {
-          title: 'Gallery',
-          body: 'Moments from the Academy’s continuous public service and outreach.'
-        },
-        right: {
-          layout: 'image',
-          body: 'Academy gatherings focused on education, rights, and social progress.',
-          imageSrc: 'placeholder',
-          imageAlt: 'Dr. Ambedkar Academy gallery photograph 1'
-        }
-      },
-      {
-        left: {
-          layout: 'image',
-          body: 'Monthly forums where scholars, officers, and activists share insights.',
-          imageSrc: 'placeholder',
-          imageAlt: 'Dr. Ambedkar Academy gallery photograph 2'
-        },
-        right: {
-          layout: 'image',
-          body: 'Monthly forums where scholars, officers, and activists share insights.',
-          imageSrc: 'placeholder',
-          imageAlt: 'Dr. Ambedkar Academy gallery photograph 3'
-        }
-      },
-      {
-        left: {
-          layout: 'image',
-          body: 'Monthly forums where scholars, officers, and activists share insights.',
-          imageSrc: 'placeholder',
-          imageAlt: 'Dr. Ambedkar Academy gallery photograph 4'
-        },
-        right: {
-          layout: 'image',
-          body: 'Program snapshots from awareness seminars and social initiatives.',
-          imageSrc: 'placeholder',
-          imageAlt: 'Dr. Ambedkar Academy gallery photograph 5'
-        }
-      }
-    ]
-  },
-  {
-    id: 'management',
-    label: 'Management',
-    pages: [
-      {
-        left: {
-          title: 'Management',
-          body:
-            'The Trust is managed by people of eminence commanding high respect in society. The management comprises the Managing Trustee and 24 Trustees drawn from diverse fields.'
-        },
-        right: {
-          layout: 'image',
-          imageSrc: 'placeholder',
-          imageAlt: 'Thiru C. Chellappan, IAS Retired photograph',
-          subTitle: 'Thiru C. Chellappan, IAS (Retd.)',
-          body:
-            'Former Secretary to the Government of Tamil Nadu, former Member of TNPSC, and former Member of the National Commission for Scheduled Castes & Scheduled Tribes, serves as the Managing Trustee.'
-        }
-      },
-      {
-        left: {
-          layout: 'image',
-          imageSrc: 'placeholder',
-          imageAlt: 'Thiru J. Ramalinga photograph',
-          subTitle: 'Thiru J. Ramalingam',
-          body:
-            'Thiru J. Ramalingam, former Member of TNPSC and former expert with the United Nations (FAO), is the Secretary-General of Dr. Ambedkar Academy.',
-        },
-        right: {
-          layout: 'image',
-          imageSrc: 'placeholder',
-          imageAlt: 'Dr. A. Padmanaban, IAS (Retd.) photograph',
-          subTitle: 'Dr. A. Padmanaban, IAS (Retd.)',
-          body: 'Dr. A. Padmanaban, IAS (Retd.) is the chief architect of the Trust. He has served as Governor of Mizoram, Chief Secretary to the Government of Tamil Nadu, Adviser to the Governor of Tamil Nadu, Member of UPSC, and President of the World Poet Organisation.',
-        }
-      }
-    ]
-  }
-];
 
 export default function ScrollScene() {
   const rootRef = useRef(null);
@@ -543,9 +428,9 @@ export default function ScrollScene() {
     };
   }, []);
 
-  const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) ?? TAB_CONFIG[0];
+  const activeTabConfig = ACADEMY_TABS.find((tab) => tab.id === activeTab) ?? ACADEMY_TABS[0];
   const activePages = activeTabConfig.pages;
-  const lastTabId = TAB_CONFIG[TAB_CONFIG.length - 1]?.id;
+  const lastTabId = ACADEMY_TABS[ACADEMY_TABS.length - 1]?.id;
   const currentPage = activePages[pageIndex] ?? activePages[0];
   const showPrev = !(activeTab === 'about' && pageIndex === 0);
   const showNext = pageIndex < activePages.length - 1 || activeTab !== lastTabId;
@@ -575,10 +460,10 @@ export default function ScrollScene() {
 
     if (activeTab === 'gallery') {
       setActiveTab('about');
-      setPageIndex(TAB_CONFIG[0].pages.length - 1);
+      setPageIndex(ACADEMY_TABS[0].pages.length - 1);
     } else if (activeTab === 'management') {
       setActiveTab('gallery');
-      setPageIndex(TAB_CONFIG[1].pages.length - 1);
+      setPageIndex(ACADEMY_TABS[1].pages.length - 1);
     }
   };
 
@@ -632,7 +517,7 @@ export default function ScrollScene() {
           showNext={showNext}
           onPrev={handlePrev}
           onNext={handleNext}
-          tabs={TAB_CONFIG}
+          tabs={ACADEMY_TABS}
           activeTab={activeTab}
           onTabClick={handleTabClick}
           allowCloseOnLeft={allowCloseOnLeft}

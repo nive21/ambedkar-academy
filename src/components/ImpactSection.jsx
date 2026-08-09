@@ -143,6 +143,25 @@ export default function ImpactSection() {
         <div className="impact-left">
           <h2 className="impact-title">Services</h2>
           <p className="impact-intro">{sectionIntro}</p>
+          <div className="impact-select-wrap">
+            <label className="impact-select-label" htmlFor="impact-select">
+              Choose a service
+            </label>
+            <select
+              id="impact-select"
+              className="impact-select"
+              value={activeImpactId}
+              onChange={(event) => bringToFront(event.target.value)}
+              aria-label="Choose a service"
+            >
+              {IMPACTS.map((impact, index) => (
+                <option key={impact.id} value={impact.id}>
+                  {String(index + 1).padStart(2, '0')} {impact.title}
+                </option>
+              ))}
+            </select>
+            <span className="impact-select-arrow" aria-hidden="true" />
+          </div>
           <ul className="impact-list" aria-label="Services list">
             {IMPACTS.map((impact, index) => (
               <li key={impact.id}>
