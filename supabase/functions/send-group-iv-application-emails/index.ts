@@ -46,6 +46,8 @@ serve(async (req: Request): Promise<Response> => {
     const motherOccupation = body?.motherOccupation;
     const fatherName = body?.fatherName;
     const fatherOccupation = body?.fatherOccupation;
+    const annualFamilyIncomeInr = body?.annualFamilyIncomeInr;
+    const parentContactNumber = body?.parentContactNumber;
     const tnpscExams = Array.isArray(body?.tnpscExams) ? body.tnpscExams : [];
     const previousCoaching = body?.previousCoaching;
     const previousCoachingYear = body?.previousCoachingYear;
@@ -68,6 +70,8 @@ serve(async (req: Request): Promise<Response> => {
       !motherOccupation ||
       !fatherName ||
       !fatherOccupation ||
+      !annualFamilyIncomeInr ||
+      !parentContactNumber ||
       typeof previousCoaching !== 'boolean' ||
       !adminEmail
     ) {
@@ -113,6 +117,8 @@ serve(async (req: Request): Promise<Response> => {
 <strong>Mother's Occupation:</strong> ${motherOccupation}<br />
 <strong>Father's Name:</strong> ${fatherName}<br />
 <strong>Father's Occupation:</strong> ${fatherOccupation}<br />
+<strong>Annual Family Income (INR):</strong> ${annualFamilyIncomeInr}<br />
+<strong>Parent Contact Number:</strong> ${parentContactNumber}<br />
 <strong>Previous TNPSC Examinations:</strong> ${tnpscExams.length ? tnpscExams.join(', ') : 'None mentioned'}<br />
 <strong>Previously attended Ambedkar Academy coaching:</strong> ${previousCoaching ? 'Yes' : 'No'}${
   previousCoaching ? `<br /><strong>Previous Coaching Year:</strong> ${previousCoachingYear}` : ''

@@ -29,6 +29,8 @@ const initialFormValues = {
   motherOccupation: '',
   fatherName: '',
   fatherOccupation: '',
+  annualFamilyIncome: '',
+  parentContactNumber: '',
   previousCoaching: '',
   previousCoachingYear: ''
 };
@@ -135,6 +137,18 @@ function getFieldError(name, value, values) {
     case 'fatherOccupation':
       if (!trimmedValue) return "Father's occupation is required.";
       return '';
+    case 'annualFamilyIncome':
+      if (!trimmedValue) return 'Annual family income in INR is required.';
+      if (!/^\d{4,10}$/.test(trimmedValue)) {
+        return 'Enter a valid annual family income in INR using digits only.';
+      }
+      return '';
+    case 'parentContactNumber':
+      if (!trimmedValue) return 'A parent contact number is required.';
+      if (!/^\d{10}$/.test(trimmedValue)) {
+        return 'Parent contact number must be exactly 10 digits.';
+      }
+      return '';
     case 'previousCoaching':
       if (!trimmedValue) return 'Please choose whether you attended previously.';
       return '';
@@ -185,6 +199,10 @@ export default function ApplyPage() {
           ? normalizeDigits(value).slice(0, 6)
           : name === 'contactNumber'
             ? normalizeDigits(value).slice(0, 10)
+            : name === 'parentContactNumber'
+              ? normalizeDigits(value).slice(0, 10)
+              : name === 'annualFamilyIncome'
+                ? normalizeDigits(value).slice(0, 10)
             : name === 'previousCoachingYear'
               ? normalizeDigits(value).slice(0, 4)
               : value;
@@ -265,6 +283,8 @@ export default function ApplyPage() {
         mother_occupation: formValues.motherOccupation.trim(),
         father_name: formValues.fatherName.trim(),
         father_occupation: formValues.fatherOccupation.trim(),
+        annual_family_income_inr: formValues.annualFamilyIncome,
+        parent_contact_number: formValues.parentContactNumber,
         tnpsc_exams: selectedExams,
         previous_coaching: formValues.previousCoaching === 'yes',
         previous_coaching_year:
@@ -300,6 +320,8 @@ export default function ApplyPage() {
           motherOccupation: payload.mother_occupation,
           fatherName: payload.father_name,
           fatherOccupation: payload.father_occupation,
+          annualFamilyIncomeInr: payload.annual_family_income_inr,
+          parentContactNumber: payload.parent_contact_number,
           tnpscExams: payload.tnpsc_exams,
           previousCoaching: payload.previous_coaching,
           previousCoachingYear: payload.previous_coaching_year
@@ -570,6 +592,32 @@ export default function ApplyPage() {
                 onChange={handleFieldChange}
                 onBlur={handleFieldBlur}
                 error={fieldErrors.fatherOccupation}
+              />
+            </div>
+
+            <div className="book-hall-form__row">
+              <FormField
+                label="Annual Family Income In INR"
+                name="annualFamilyIncome"
+                required
+                placeholder="Enter annual family income in INR"
+                inputMode="numeric"
+                value={formValues.annualFamilyIncome}
+                onChange={handleFieldChange}
+                onBlur={handleFieldBlur}
+                error={fieldErrors.annualFamilyIncome}
+              />
+              <FormField
+                label="Contact Number Of A Parent"
+                name="parentContactNumber"
+                type="tel"
+                required
+                placeholder="Enter 10-digit parent contact number"
+                inputMode="numeric"
+                value={formValues.parentContactNumber}
+                onChange={handleFieldChange}
+                onBlur={handleFieldBlur}
+                error={fieldErrors.parentContactNumber}
               />
             </div>
 

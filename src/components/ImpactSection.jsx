@@ -95,7 +95,11 @@ function randomNudge() {
 }
 
 export default function ImpactSection() {
-  const [deckOrder, setDeckOrder] = useState(IMPACTS.map((impact) => impact.id));
+  const [deckOrder, setDeckOrder] = useState(() => {
+    const defaultImpactId = 'monthly-meetings';
+    const remainingImpacts = IMPACTS.map((impact) => impact.id).filter((impactId) => impactId !== defaultImpactId);
+    return [...remainingImpacts, defaultImpactId];
+  });
   const [nudges, setNudges] = useState({});
 
   const impactMap = useMemo(

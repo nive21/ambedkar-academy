@@ -274,7 +274,7 @@ serve(async (req: Request): Promise<Response> => {
       const { data, error } = await adminClient
         .from('group_iv_applications_2026')
         .select(
-          'id, full_name, date_of_birth, gender, permanent_address, city, pincode, email, contact_number, aadhar_number, educational_qualification, community, mother_name, mother_occupation, father_name, father_occupation, tnpsc_exams, previous_coaching, previous_coaching_year, interview_status, created_at'
+          'id, full_name, date_of_birth, gender, permanent_address, city, pincode, email, contact_number, aadhar_number, educational_qualification, community, mother_name, mother_occupation, father_name, father_occupation, annual_family_income_inr, parent_contact_number, tnpsc_exams, previous_coaching, previous_coaching_year, interview_status, created_at'
         )
         .order('created_at', { ascending: false });
 

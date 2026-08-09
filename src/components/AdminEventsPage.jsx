@@ -703,7 +703,9 @@ export default function AdminEventsPage() {
                           <span className={`admin-application-toggle__arrow${isOpen ? ' is-open' : ''}`} aria-hidden="true">
                             ▸
                           </span>
-                          <span className="admin-application-toggle__name">{application.full_name}</span>
+                          <span className="admin-application-toggle__name">
+                            #{application.id} · {application.full_name}
+                          </span>
                           <span className="admin-application-toggle__meta">
                             {application.gender} · Applied on {formatDate(application.created_at.split('T')[0])}
                           </span>
@@ -753,11 +755,14 @@ export default function AdminEventsPage() {
                           id={`group-iv-application-${application.id}`}
                           className="admin-application-details"
                         >
+                          <p><strong>Application ID:</strong> {application.id}</p>
                           <p><strong>Date of Birth:</strong> {formatDate(application.date_of_birth)}</p>
                           <p><strong>Permanent Address:</strong> {application.permanent_address}</p>
                           <p><strong>City:</strong> {application.city} · <strong>Pincode:</strong> {application.pincode}</p>
                           <p><strong>Email:</strong> {application.email} · <strong>Contact:</strong> {application.contact_number}</p>
                           <p><strong>Aadhar Number:</strong> {application.aadhar_number}</p>
+                          <p><strong>Annual Family Income (INR):</strong> {application.annual_family_income_inr}</p>
+                          <p><strong>Parent Contact Number:</strong> {application.parent_contact_number}</p>
                           <p><strong>Educational Qualification:</strong> {application.educational_qualification}</p>
                           <p><strong>Community:</strong> {application.community}</p>
                           <p><strong>Mother's Name:</strong> {application.mother_name}</p>
