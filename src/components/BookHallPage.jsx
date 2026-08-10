@@ -52,7 +52,7 @@ const hallRules = [
 ];
 
 const MIN_DAYS_AHEAD = 7;
-const ADMIN_EMAIL = import.meta.env.VITE_BOOKING_ADMIN_EMAIL;
+const ADMIN_EMAIL = import.meta.env.VITE_BOOKING_ADMIN_EMAIL || 'admin@ambedkar-academy.in';
 
 function toIsoDate(value) {
   return value.toISOString().split('T')[0];

@@ -1,12 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
-const ADMIN_EMAIL = import.meta.env.VITE_BOOKING_ADMIN_EMAIL;
-const INTERVIEW_DATE_OPTIONS = [
-  { value: '2026-08-18', label: '18 August 2026' },
-  { value: '2026-08-19', label: '19 August 2026' },
-  { value: 'custom', label: 'Custom date' }
-];
+const ADMIN_EMAIL = import.meta.env.VITE_BOOKING_ADMIN_EMAIL || 'admin@ambedkar-academy.in';
+const INTERVIEW_DATE_OPTIONS = ['2026-08-18', '2026-08-19'];
 const INTERVIEW_STATUS_OPTIONS = [
   { value: 'not-held-yet', label: 'Not held yet' },
   { value: 'accepted', label: 'Accepted' },
@@ -77,6 +73,17 @@ export default function AdminEventsPage() {
   const [loading, setLoading] = useState(false);
 
   const todayIso = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const interviewDateCounts = useMemo(
+    () =>
+      applications.reduce((acc, application) => {
+        if (application.shortlist_status !== 'shortlisted' || !application.interview_date) {
+          return acc;
+        }
+        acc[application.interview_date] = (acc[application.interview_date] ?? 0) + 1;
+        return acc;
+      }, {}),
+    [applications]
+  );
 
   async function callAdmin(action, payload = {}) {
     const { data, error: fnError } = await supabase.functions.invoke('admin-events', {
@@ -142,14 +149,9 @@ export default function AdminEventsPage() {
       setApplicationDecisionDrafts(
         applicationRows.reduce((acc, application) => {
           const interviewDate = application.interview_date ?? '';
-          const defaultOption = ['2026-08-18', '2026-08-19'].includes(interviewDate)
-            ? interviewDate
-            : interviewDate
-              ? 'custom'
-              : '2026-08-18';
           acc[application.id] = {
-            selectedDateOption: defaultOption,
-            customInterviewDate: defaultOption === 'custom' ? interviewDate : ''
+            selectedDateOption: INTERVIEW_DATE_OPTIONS.includes(interviewDate) ? interviewDate : interviewDate ? 'custom' : '',
+            customInterviewDate: interviewDate && !INTERVIEW_DATE_OPTIONS.includes(interviewDate) ? interviewDate : ''
           };
           return acc;
         }, {})
@@ -214,18 +216,33 @@ export default function AdminEventsPage() {
 
   async function handleApplicationStatusChange(applicationId, status) {
     clearStatus();
+    const application = applications.find((item) => item.id === applicationId);
+    const statusText = interviewStatusLabel(status);
+
+    if (!application) {
+      setApplicationMessage(applicationId, 'error', 'Application not found.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Confirm interview status update for ${application.full_name} to "${statusText}"? This will send confirmation emails to the applicant and admin.`
+    );
+
+    if (!confirmed) return;
+
     setLoading(true);
     try {
       await callAdmin('set-group-iv-application-status', {
         id: applicationId,
-        status
+        status,
+        adminEmail: ADMIN_EMAIL
       });
       setApplications((current) =>
         current.map((application) =>
           application.id === applicationId ? { ...application, interview_status: status } : application
         )
       );
-      setApplicationMessage(applicationId, 'success', 'Interview status updated.');
+      setApplicationMessage(applicationId, 'success', 'Interview status updated and confirmation emails sent.');
     } catch (err) {
       setApplicationMessage(applicationId, 'error', err.message || 'Unable to update interview status.');
     } finally {
@@ -788,7 +805,7 @@ export default function AdminEventsPage() {
                   const isOpen = openApplicationId === application.id;
                   const statusMessage = applicationMessages[application.id];
                   const decisionDraft = applicationDecisionDrafts[application.id] ?? {
-                    selectedDateOption: '2026-08-18',
+                    selectedDateOption: '',
                     customInterviewDate: ''
                   };
                   const isShortlisted = application.shortlist_status === 'shortlisted';
@@ -824,29 +841,31 @@ export default function AdminEventsPage() {
                             <div className="admin-application-decision" onClick={(event) => event.stopPropagation()}>
                               <div className="admin-application-date-picker">
                                 <span>Interview Date</span>
-                                <div className="admin-application-date-options">
-                                  {INTERVIEW_DATE_OPTIONS.map((option) => (
-                                    <label key={option.value} className="admin-application-date-option">
-                                      <input
-                                        type="radio"
-                                        name={`interview-date-${application.id}`}
-                                        value={option.value}
-                                        checked={decisionDraft.selectedDateOption === option.value}
-                                        onChange={(event) =>
-                                          setApplicationDecisionDrafts((prev) => ({
-                                            ...prev,
-                                            [application.id]: {
-                                              ...decisionDraft,
-                                              selectedDateOption: event.target.value
-                                            }
-                                          }))
-                                        }
-                                        disabled={loading}
-                                      />
-                                      <span>{option.label}</span>
-                                    </label>
+                                <select
+                                  value={decisionDraft.selectedDateOption}
+                                  onChange={(event) =>
+                                    setApplicationDecisionDrafts((prev) => ({
+                                      ...prev,
+                                      [application.id]: {
+                                        ...decisionDraft,
+                                        selectedDateOption: event.target.value,
+                                        customInterviewDate:
+                                          event.target.value === 'custom' ? decisionDraft.customInterviewDate : ''
+                                      }
+                                    }))
+                                  }
+                                  disabled={loading}
+                                >
+                                  <option value="" disabled>
+                                    Select interview date
+                                  </option>
+                                  {INTERVIEW_DATE_OPTIONS.map((dateValue) => (
+                                    <option key={dateValue} value={dateValue}>
+                                      {formatInterviewDate(dateValue)} ({interviewDateCounts[dateValue] ?? 0} shortlisted)
+                                    </option>
                                   ))}
-                                </div>
+                                  <option value="custom">Custom date</option>
+                                </select>
                                 {decisionDraft.selectedDateOption === 'custom' ? (
                                   <input
                                     type="date"

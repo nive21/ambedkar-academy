@@ -290,20 +290,7 @@
   letter-spacing: 0.05em;
 }
 
-.admin-application-date-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  justify-content: flex-end;
-}
-
-.admin-application-date-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-}
-
+.admin-application-date-picker select,
 .admin-application-date-picker input[type='date'] {
   min-height: 42px;
   border: 1px solid rgba(var(--color-bg-rgb) / 0.35);
@@ -469,7 +456,6 @@
     justify-items: stretch;
   }
 
-  .admin-application-date-options,
   .admin-application-decision-buttons {
     justify-content: flex-start;
   }

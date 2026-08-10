@@ -112,6 +112,13 @@ function formatInterviewDate(dateValue: string) {
   }).format(new Date(`${dateValue}T00:00:00`));
 }
 
+function interviewStatusDisplayLabel(status: string) {
+  if (status === 'accepted') return 'Accepted';
+  if (status === 'rejected') return 'Rejected';
+  if (status === 'in-review') return 'In Review';
+  return 'Not Held Yet';
+}
+
 async function sendStatusEmails(params: {
   userEmail: string;
   fullName: string;
@@ -123,8 +130,8 @@ async function sendStatusEmails(params: {
   bookingSlot: string;
 }) {
   const resendApiKey = getEnv('RESEND_API_KEY');
-  const senderEmail = getEnv('BOOKING_SENDER_EMAIL');
-  const fallbackAdminEmail = getEnv('BOOKING_ADMIN_EMAIL');
+  const senderEmail = getEnv('BOOKING_SENDER_EMAIL') || 'admin@ambedkar-academy.in';
+  const fallbackAdminEmail = getEnv('BOOKING_ADMIN_EMAIL') || 'admin@ambedkar-academy.in';
   const adminEmail = params.adminEmail || fallbackAdminEmail;
 
   if (!resendApiKey || !senderEmail || !adminEmail) {
@@ -199,8 +206,8 @@ async function sendInterviewDecisionEmails(params: {
   adminEmail: string;
 }) {
   const resendApiKey = getEnv('RESEND_API_KEY');
-  const senderEmail = getEnv('BOOKING_SENDER_EMAIL');
-  const fallbackAdminEmail = getEnv('BOOKING_ADMIN_EMAIL');
+  const senderEmail = getEnv('BOOKING_SENDER_EMAIL') || 'admin@ambedkar-academy.in';
+  const fallbackAdminEmail = getEnv('BOOKING_ADMIN_EMAIL') || 'admin@ambedkar-academy.in';
   const adminEmail = params.adminEmail || fallbackAdminEmail;
 
   if (!resendApiKey || !senderEmail || !adminEmail) {
@@ -283,6 +290,80 @@ async function sendInterviewDecisionEmails(params: {
   if (failed) {
     const detail = await failed.text();
     throw new Error(`Interview decision email failed: ${detail}`);
+  }
+}
+
+async function sendInterviewStatusEmails(params: {
+  userEmail: string;
+  fullName: string;
+  applicationId: number;
+  interviewDate: string;
+  interviewStatus: string;
+  adminEmail: string;
+}) {
+  const resendApiKey = getEnv('RESEND_API_KEY');
+  const senderEmail = getEnv('BOOKING_SENDER_EMAIL') || 'admin@ambedkar-academy.in';
+  const fallbackAdminEmail = getEnv('BOOKING_ADMIN_EMAIL') || 'admin@ambedkar-academy.in';
+  const adminEmail = params.adminEmail || fallbackAdminEmail;
+
+  if (!resendApiKey || !senderEmail || !adminEmail) {
+    throw new Error('Missing RESEND_API_KEY, BOOKING_SENDER_EMAIL, or BOOKING_ADMIN_EMAIL.');
+  }
+
+  const statusLabel = interviewStatusDisplayLabel(params.interviewStatus);
+  const formattedInterviewDate = formatInterviewDate(params.interviewDate);
+
+  const userBody = `<p>Dear ${params.fullName},</p>
+<p>Your interview status for application #${params.applicationId} has been updated.</p>
+<p><strong>Interview Date:</strong> ${formattedInterviewDate}<br />
+<strong>Status:</strong> ${statusLabel}</p>
+<p>Thank you.</p>`;
+
+  const adminBody = `<p>An interview status update has been confirmed.</p>
+<p><strong>Application ID:</strong> ${params.applicationId}<br />
+<strong>Name:</strong> ${params.fullName}<br />
+<strong>Applicant Email:</strong> ${params.userEmail}<br />
+<strong>Interview Date:</strong> ${formattedInterviewDate}<br />
+<strong>Status:</strong> ${statusLabel}</p>`;
+
+  const emails = [
+    {
+      to: params.userEmail,
+      subject: `Interview Status Updated (#${params.applicationId})`,
+      html: userBody,
+      replyTo: adminEmail
+    },
+    {
+      to: adminEmail,
+      subject: `Interview Status Confirmed (#${params.applicationId})`,
+      html: adminBody,
+      replyTo: params.userEmail
+    }
+  ];
+
+  const results = await Promise.all(
+    emails.map((email) =>
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: senderEmail,
+          to: email.to,
+          subject: email.subject,
+          html: email.html,
+          reply_to: email.replyTo
+        })
+      })
+    )
+  );
+
+  const failed = results.find((result) => !result.ok);
+  if (failed) {
+    const detail = await failed.text();
+    throw new Error(`Interview status email failed: ${detail}`);
   }
 }
 
@@ -452,13 +533,16 @@ serve(async (req: Request): Promise<Response> => {
 
       const { data: application, error: applicationError } = await adminClient
         .from('group_iv_applications_2026')
-        .select('id, shortlist_status')
+        .select('id, full_name, email, shortlist_status, interview_date')
         .eq('id', body.id)
         .single();
 
       if (applicationError || !application) throw new Error('Application not found.');
       if (application.shortlist_status !== 'shortlisted') {
         throw new Error('Interview status can only be updated after a candidate is shortlisted.');
+      }
+      if (!application.interview_date) {
+        throw new Error('Interview date is missing for this shortlisted candidate.');
       }
 
       const { error } = await adminClient
@@ -469,6 +553,15 @@ serve(async (req: Request): Promise<Response> => {
         .eq('id', body.id);
 
       if (error) throw new Error(error.message);
+
+      await sendInterviewStatusEmails({
+        userEmail: application.email,
+        fullName: application.full_name,
+        applicationId: application.id,
+        interviewDate: application.interview_date,
+        interviewStatus: body.status,
+        adminEmail: body.adminEmail
+      });
 
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,

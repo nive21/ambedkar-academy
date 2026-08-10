@@ -115,7 +115,7 @@ export default function ClosingSection() {
             <div className="closing-block">
               <div className="closing-label">Contact:</div>
               <div className="closing-contacts">
-                <span>ambedkaracademytpet@gmail.com</span>
+                <span>admin@ambedkar-academy.in</span>
                 {/* <span>+91-1234567890</span> */}
               </div>
             </div>
