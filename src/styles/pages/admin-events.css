@@ -272,6 +272,54 @@
   justify-content: flex-end;
 }
 
+.admin-application-decision {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.admin-application-date-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-application-date-picker span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-application-date-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  justify-content: flex-end;
+}
+
+.admin-application-date-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.admin-application-date-picker input[type='date'] {
+  min-height: 42px;
+  border: 1px solid rgba(var(--color-bg-rgb) / 0.35);
+  background: rgba(var(--color-bg-rgb) / 0.96);
+  color: var(--color-ink);
+  padding: 10px 12px;
+  font-family: var(--font-sans);
+}
+
+.admin-application-decision-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .admin-application-status-picker {
   display: grid;
   gap: 6px;
@@ -413,6 +461,16 @@
 
   .admin-application-actions {
     width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-application-decision {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .admin-application-date-options,
+  .admin-application-decision-buttons {
     justify-content: flex-start;
   }
 

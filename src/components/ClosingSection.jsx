@@ -115,13 +115,13 @@ export default function ClosingSection() {
             <div className="closing-block">
               <div className="closing-label">Contact:</div>
               <div className="closing-contacts">
-                <span>cchellappanias@gmail.com</span>
+                <span>ambedkaracademytpet@gmail.com</span>
                 {/* <span>+91-1234567890</span> */}
               </div>
             </div>
             <div className="closing-block closing-donate">
               <p>
-                We appeal to you to lend a helping hand to The People's Educational Trust to carry out its activities in whatever way possible. 
+                Please reach out to us if you would like to donate or volunteer. We would be happy to hear from you. 
               </p>
               {/* <div className="closing-label">Donate:</div> */}
               {/* <div className="closing-qr" aria-hidden="true" /> */}

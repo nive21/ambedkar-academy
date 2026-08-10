@@ -43,9 +43,9 @@ serve(async (req: Request): Promise<Response> => {
     const qualification = body?.qualification;
     const community = body?.community;
     const motherName = body?.motherName;
-    const motherOccupation = body?.motherOccupation;
+    const motherOccupation = body?.motherOccupation?.trim?.() || '';
     const fatherName = body?.fatherName;
-    const fatherOccupation = body?.fatherOccupation;
+    const fatherOccupation = body?.fatherOccupation?.trim?.() || '';
     const annualFamilyIncomeInr = body?.annualFamilyIncomeInr;
     const parentContactNumber = body?.parentContactNumber;
     const tnpscExams = Array.isArray(body?.tnpscExams) ? body.tnpscExams : [];
@@ -67,9 +67,7 @@ serve(async (req: Request): Promise<Response> => {
       !qualification ||
       !community ||
       !motherName ||
-      !motherOccupation ||
       !fatherName ||
-      !fatherOccupation ||
       !annualFamilyIncomeInr ||
       !parentContactNumber ||
       typeof previousCoaching !== 'boolean' ||
@@ -84,21 +82,22 @@ serve(async (req: Request): Promise<Response> => {
     const emailRequests = [
       {
         to: userEmail,
-        subject: `Group IV Coaching Application Received (#${applicationId})`,
+        subject: `TNPSC Group IV Coaching Application Received (#${applicationId}) | Dr. Ambedkar Academy - The People's Educational Trust`,
         replyTo: adminEmail,
         html: `<p>Dear ${fullName},</p>
-<p>Your Group IV coaching application has been received by Dr. Ambedkar Academy.</p>
+<p>Your TNPSC Group IV coaching application has been received by Dr. Ambedkar Academy.</p>
 <p><strong>Application ID:</strong> ${applicationId}<br />
 <strong>Educational Qualification:</strong> ${qualification}</p>
-<p>Please attend the in-person interview on August 16 or August 17, 2026 from 10:00 AM to 6:00 PM at Dr. Ambedkar Academy, The People's Educational Trust, 73, L-Block, 24th Street, Anna Nagar East, Chennai 600 102.</p>
-<p>Kindly bring your Aadhar card, passport-size photograph, education proof, and community certificate.</p>
-<p>Selected candidates are expected to join the classes from <strong>August 20, 2026</strong>.</p>
-<p>For any queries, please contact us at cchellappanias@gmail.com or call +91-9444244362.</p>
+<p>Applications will be reviewed, and shortlisted candidates will be invited for an interview in Chennai on 18th or 19th August 2026. 
+Shortlisted candidates will be required to bring their original Aadhaar card, passport-size photograph, proof of education, and community certificate to the interview. All original documents will be returned after verification.</p>
+<p>Candidates selected in the interview are expected to join the classes from <strong>August 20, 2026</strong>.</p>
+<p>We will notify you via email regarding the status of your application. Please keep an eye on your inbox and spam/junk folder for any updates.</p>
+<p>For any queries, please contact us at ambedkaracademytpet@gmail.com or call +91-9444244362.</p>
 <p>Thank you.</p>`
       },
       {
         to: adminEmail,
-        subject: `New Group IV Coaching Application (#${applicationId})`,
+        subject: `New TNPSC Group IV Coaching Application (#${applicationId})`,
         replyTo: userEmail,
         html: `<p>A new Group IV coaching application has been submitted.</p>
 <p><strong>Application ID:</strong> ${applicationId}<br />
@@ -114,9 +113,9 @@ serve(async (req: Request): Promise<Response> => {
 <strong>Educational Qualification:</strong> ${qualification}<br />
 <strong>Community:</strong> ${community}<br />
 <strong>Mother's Name:</strong> ${motherName}<br />
-<strong>Mother's Occupation:</strong> ${motherOccupation}<br />
+<strong>Mother's Occupation:</strong> ${motherOccupation || 'Not provided'}<br />
 <strong>Father's Name:</strong> ${fatherName}<br />
-<strong>Father's Occupation:</strong> ${fatherOccupation}<br />
+<strong>Father's Occupation:</strong> ${fatherOccupation || 'Not provided'}<br />
 <strong>Annual Family Income (INR):</strong> ${annualFamilyIncomeInr}<br />
 <strong>Parent Contact Number:</strong> ${parentContactNumber}<br />
 <strong>Previous TNPSC Examinations:</strong> ${tnpscExams.length ? tnpscExams.join(', ') : 'None mentioned'}<br />

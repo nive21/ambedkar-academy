@@ -492,7 +492,7 @@ export default function ScrollScene() {
 
   const handleContinueClick = () => {
     ignoreScrollUntilRef.current = Date.now() + 800;
-    rootRef.current?.nextElementSibling?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('services')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (

@@ -129,13 +129,11 @@ function getFieldError(name, value, values) {
       if (!trimmedValue) return "Mother's name is required.";
       return '';
     case 'motherOccupation':
-      if (!trimmedValue) return "Mother's occupation is required.";
       return '';
     case 'fatherName':
       if (!trimmedValue) return "Father's name is required.";
       return '';
     case 'fatherOccupation':
-      if (!trimmedValue) return "Father's occupation is required.";
       return '';
     case 'annualFamilyIncome':
       if (!trimmedValue) return 'Annual family income in INR is required.';
@@ -280,9 +278,9 @@ export default function ApplyPage() {
         educational_qualification: formValues.qualification,
         community: formValues.community,
         mother_name: formValues.motherName.trim(),
-        mother_occupation: formValues.motherOccupation.trim(),
+        mother_occupation: formValues.motherOccupation.trim() || null,
         father_name: formValues.fatherName.trim(),
-        father_occupation: formValues.fatherOccupation.trim(),
+        father_occupation: formValues.fatherOccupation.trim() || null,
         annual_family_income_inr: formValues.annualFamilyIncome,
         parent_contact_number: formValues.parentContactNumber,
         tnpsc_exams: selectedExams,
@@ -336,10 +334,10 @@ export default function ApplyPage() {
       setTouchedFields({});
       setFieldErrors({});
       setSelectedExams([]);
-      setFormStatus('Application submitted successfully. Confirmation emails have been sent to you and the admin.');
+      setFormStatus('Application submitted successfully. A confirmation email has been sent to you. Please check your spam or junk folder if you don’t see it in your inbox. We’ll email you with updates on your application status, so please keep an eye on your inbox and spam or junk folder.');
     } catch (error) {
       setFormStatus('');
-      setFormError(error instanceof Error ? error.message : 'Unable to submit application.');
+      setFormError(error instanceof Error ? error.message : 'Unable to submit application. Please try again or contact ambedkaracademytpet@gmail.com');
     } finally {
       setIsSubmitting(false);
     }
@@ -360,19 +358,15 @@ export default function ApplyPage() {
 
           <p className="book-hall-form-note apply-page__notice">
             Dr. Ambedkar Academy is offering <strong>free coaching for the TNPSC Group IV examination</strong> to SC and ST candidates for 4 months starting August 20, 2026. Selected candidates will be provided with free boarding and lodging.
-            Eligible candidates are encouraged to apply and attend the interview.
+            Eligible candidates are encouraged to apply.
             <br /><br />
-            Applications must be submitted by <strong>August 16, 2026</strong>. Candidates must attend the interview in person at <i>
-              Dr. Ambedkar Academy, The People's Educational Trust, 73, L-Block,
-              24th Street, Anna Nagar East, Chennai – 600 102
-            </i>.
-            Interviews will be held on <strong>August 18 and 19, 2026, from 10:00 AM to 6:00 PM</strong>.
+            Applications must be submitted by <strong>August 16, 2026</strong>. 
             <br /><br />
-            Please bring your <strong>Aadhaar card, passport-size photograph, proof of educational qualification,
-            and community certificate</strong> to the interview.
-            Selected candidates are expected to join the classes from <strong>August 20, 2026</strong>. 
+            Applications will be reviewed, and shortlisted candidates will be invited for an interview in Chennai on 18th or 19th August 2026. 
+            Shortlisted candidates will be required to bring their original Aadhaar card, passport-size photograph, proof of education, and community certificate to the interview. All original documents will be returned after verification.
+            Candidates selected in the interview are expected to join the classes from <strong>August 20, 2026</strong>.
             <br /><br />
-            For any queries, please contact us at <a className="apply-page__link" href="mailto:cchellappanias@gmail.com">cchellappanias@gmail.com</a> or call +91-9444244362.
+            For any queries, please contact us at <a className="apply-page__link" href="mailto:ambedkaracademytpet@gmail.com">ambedkaracademytpet@gmail.com</a> or call +91-9444244362.
           </p>
 
           <form className="book-hall-form" onSubmit={handleSubmit} noValidate>
@@ -561,10 +555,9 @@ export default function ApplyPage() {
                 error={fieldErrors.motherName}
               />
               <FormField
-                label="Mother's Occupation"
+                label="Mother's Occupation (if applicable)"
                 name="motherOccupation"
-                required
-                placeholder="Enter mother's occupation"
+                placeholder="Enter mother's occupation if applicable"
                 value={formValues.motherOccupation}
                 onChange={handleFieldChange}
                 onBlur={handleFieldBlur}
@@ -584,10 +577,9 @@ export default function ApplyPage() {
                 error={fieldErrors.fatherName}
               />
               <FormField
-                label="Father's Occupation"
+                label="Father's Occupation (if applicable)"
                 name="fatherOccupation"
-                required
-                placeholder="Enter father's occupation"
+                placeholder="Enter father's occupation if applicable"
                 value={formValues.fatherOccupation}
                 onChange={handleFieldChange}
                 onBlur={handleFieldBlur}

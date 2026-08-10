@@ -104,6 +104,14 @@ function getSlotLabel(slot: string) {
   return 'Full Day';
 }
 
+function formatInterviewDate(dateValue: string) {
+  return new Intl.DateTimeFormat('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date(`${dateValue}T00:00:00`));
+}
+
 async function sendStatusEmails(params: {
   userEmail: string;
   fullName: string;
@@ -179,6 +187,102 @@ ${reasonText}`;
   if (failed) {
     const detail = await failed.text();
     throw new Error(`Status notification email failed: ${detail}`);
+  }
+}
+
+async function sendInterviewDecisionEmails(params: {
+  userEmail: string;
+  fullName: string;
+  applicationId: number;
+  shortlistStatus: 'shortlisted' | 'rejected';
+  interviewDate?: string;
+  adminEmail: string;
+}) {
+  const resendApiKey = getEnv('RESEND_API_KEY');
+  const senderEmail = getEnv('BOOKING_SENDER_EMAIL');
+  const fallbackAdminEmail = getEnv('BOOKING_ADMIN_EMAIL');
+  const adminEmail = params.adminEmail || fallbackAdminEmail;
+
+  if (!resendApiKey || !senderEmail || !adminEmail) {
+    throw new Error('Missing RESEND_API_KEY, BOOKING_SENDER_EMAIL, or BOOKING_ADMIN_EMAIL.');
+  }
+
+  const isShortlisted = params.shortlistStatus === 'shortlisted';
+  const formattedInterviewDate =
+    isShortlisted && params.interviewDate ? formatInterviewDate(params.interviewDate) : '';
+
+  const userSubject = isShortlisted
+    ? `Interview Shortlist Confirmation (#${params.applicationId})`
+    : `Application Update (#${params.applicationId})`;
+  const adminSubject = isShortlisted
+    ? `Candidate Shortlisted For Interview (#${params.applicationId})`
+    : `Candidate Rejected For Interview (#${params.applicationId})`;
+
+  const userBody = isShortlisted
+    ? `<p>Dear ${params.fullName},</p>
+<p>Congratulations! You have been shortlisted for the interview round for the TNPSC Group IV coaching program at Dr. Ambedkar Academy.</p>
+<p><strong>Application ID:</strong> ${params.applicationId}<br />
+<strong>Interview Date:</strong> ${formattedInterviewDate}</p>
+<p>Please appear on the scheduled date with your original Aadhaar card, passport-size photograph, proof of education, and community certificate. The documents will be returned after verification.</p>
+<p>Candidates selected in the interview are expected to join the classes from <strong>August 20, 2026</strong>.</p>
+<p>Good luck with your interview!</p>
+<p>Thank you.</p>`
+    : `<p>Dear ${params.fullName},</p>
+<p>Thank you for applying to the TNPSC Group IV coaching program at Dr. Ambedkar Academy.</p>
+<p>After review, your application #${params.applicationId} has not been shortlisted for the interview round.</p>
+<p>We appreciate your interest.</p>`;
+
+  const adminBody = isShortlisted
+    ? `<p>An interview shortlist decision has been confirmed.</p>
+<p><strong>Application ID:</strong> ${params.applicationId}<br />
+<strong>Name:</strong> ${params.fullName}<br />
+<strong>Applicant Email:</strong> ${params.userEmail}<br />
+<strong>Decision:</strong> Shortlisted<br />
+<strong>Interview Date:</strong> ${formattedInterviewDate}</p>`
+    : `<p>An application review decision has been confirmed.</p>
+<p><strong>Application ID:</strong> ${params.applicationId}<br />
+<strong>Name:</strong> ${params.fullName}<br />
+<strong>Applicant Email:</strong> ${params.userEmail}<br />
+<strong>Decision:</strong> Rejected</p>`;
+
+  const emails = [
+    {
+      to: params.userEmail,
+      subject: userSubject,
+      html: userBody,
+      replyTo: adminEmail
+    },
+    {
+      to: adminEmail,
+      subject: adminSubject,
+      html: adminBody,
+      replyTo: params.userEmail
+    }
+  ];
+
+  const results = await Promise.all(
+    emails.map((email) =>
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: senderEmail,
+          to: email.to,
+          subject: email.subject,
+          html: email.html,
+          reply_to: email.replyTo
+        })
+      })
+    )
+  );
+
+  const failed = results.find((result) => !result.ok);
+  if (failed) {
+    const detail = await failed.text();
+    throw new Error(`Interview decision email failed: ${detail}`);
   }
 }
 
@@ -274,7 +378,7 @@ serve(async (req: Request): Promise<Response> => {
       const { data, error } = await adminClient
         .from('group_iv_applications_2026')
         .select(
-          'id, full_name, date_of_birth, gender, permanent_address, city, pincode, email, contact_number, aadhar_number, educational_qualification, community, mother_name, mother_occupation, father_name, father_occupation, annual_family_income_inr, parent_contact_number, tnpsc_exams, previous_coaching, previous_coaching_year, interview_status, created_at'
+          'id, full_name, date_of_birth, gender, permanent_address, city, pincode, email, contact_number, aadhar_number, educational_qualification, community, mother_name, mother_occupation, father_name, father_occupation, annual_family_income_inr, parent_contact_number, tnpsc_exams, previous_coaching, previous_coaching_year, shortlist_status, interview_date, interview_status, created_at'
         )
         .order('created_at', { ascending: false });
 
@@ -285,10 +389,76 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
+    if (body?.action === 'set-group-iv-application-decision') {
+      if (!body?.id) throw new Error('Missing application id.');
+      if (!['shortlisted', 'rejected'].includes(body?.shortlistStatus)) {
+        throw new Error('Invalid shortlist decision.');
+      }
+
+      const shortlistStatus = body.shortlistStatus as 'shortlisted' | 'rejected';
+      const interviewDate = typeof body?.interviewDate === 'string' ? body.interviewDate : '';
+
+      if (shortlistStatus === 'shortlisted' && !interviewDate) {
+        throw new Error('Interview date is required when shortlisting a candidate.');
+      }
+
+      const { data: application, error: applicationError } = await adminClient
+        .from('group_iv_applications_2026')
+        .select('id, full_name, email')
+        .eq('id', body.id)
+        .single();
+
+      if (applicationError || !application) throw new Error('Application not found.');
+
+      const updatePayload =
+        shortlistStatus === 'shortlisted'
+          ? {
+              shortlist_status: shortlistStatus,
+              interview_date: interviewDate,
+              interview_status: 'not-held-yet'
+            }
+          : {
+              shortlist_status: shortlistStatus,
+              interview_date: null
+            };
+
+      const { error: updateError } = await adminClient
+        .from('group_iv_applications_2026')
+        .update(updatePayload)
+        .eq('id', body.id);
+
+      if (updateError) throw new Error(updateError.message);
+
+      await sendInterviewDecisionEmails({
+        userEmail: application.email,
+        fullName: application.full_name,
+        applicationId: application.id,
+        shortlistStatus,
+        interviewDate: shortlistStatus === 'shortlisted' ? interviewDate : undefined,
+        adminEmail: body.adminEmail
+      });
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     if (body?.action === 'set-group-iv-application-status') {
       if (!body?.id) throw new Error('Missing application id.');
       if (!['not-held-yet', 'accepted', 'rejected', 'in-review'].includes(body?.status)) {
         throw new Error('Invalid interview status.');
+      }
+
+      const { data: application, error: applicationError } = await adminClient
+        .from('group_iv_applications_2026')
+        .select('id, shortlist_status')
+        .eq('id', body.id)
+        .single();
+
+      if (applicationError || !application) throw new Error('Application not found.');
+      if (application.shortlist_status !== 'shortlisted') {
+        throw new Error('Interview status can only be updated after a candidate is shortlisted.');
       }
 
       const { error } = await adminClient

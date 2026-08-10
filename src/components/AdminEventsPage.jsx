@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const ADMIN_EMAIL = import.meta.env.VITE_BOOKING_ADMIN_EMAIL;
+const INTERVIEW_DATE_OPTIONS = [
+  { value: '2026-08-18', label: '18 August 2026' },
+  { value: '2026-08-19', label: '19 August 2026' },
+  { value: 'custom', label: 'Custom date' }
+];
 const INTERVIEW_STATUS_OPTIONS = [
   { value: 'not-held-yet', label: 'Not held yet' },
   { value: 'accepted', label: 'Accepted' },
@@ -37,6 +42,21 @@ function interviewStatusLabel(status) {
   return INTERVIEW_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? 'Not held yet';
 }
 
+function shortlistStatusLabel(status) {
+  if (status === 'shortlisted') return 'Shortlisted';
+  if (status === 'rejected') return 'Rejected';
+  return 'Pending review';
+}
+
+function formatInterviewDate(isoDate) {
+  if (!isoDate) return '';
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+
 export default function AdminEventsPage() {
   const [accessKey, setAccessKey] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -49,6 +69,7 @@ export default function AdminEventsPage() {
   const [denyReasons, setDenyReasons] = useState({});
   const [bookingMessages, setBookingMessages] = useState({});
   const [applicationMessages, setApplicationMessages] = useState({});
+  const [applicationDecisionDrafts, setApplicationDecisionDrafts] = useState({});
   const [openApplicationId, setOpenApplicationId] = useState(null);
   const [newEvent, setNewEvent] = useState(defaultEventFormState());
   const [error, setError] = useState('');
@@ -115,6 +136,21 @@ export default function AdminEventsPage() {
       setDenyReasons(
         bookingRows.reduce((acc, booking) => {
           acc[booking.id] = booking.rejection_reason ?? '';
+          return acc;
+        }, {})
+      );
+      setApplicationDecisionDrafts(
+        applicationRows.reduce((acc, application) => {
+          const interviewDate = application.interview_date ?? '';
+          const defaultOption = ['2026-08-18', '2026-08-19'].includes(interviewDate)
+            ? interviewDate
+            : interviewDate
+              ? 'custom'
+              : '2026-08-18';
+          acc[application.id] = {
+            selectedDateOption: defaultOption,
+            customInterviewDate: defaultOption === 'custom' ? interviewDate : ''
+          };
           return acc;
         }, {})
       );
@@ -192,6 +228,73 @@ export default function AdminEventsPage() {
       setApplicationMessage(applicationId, 'success', 'Interview status updated.');
     } catch (err) {
       setApplicationMessage(applicationId, 'error', err.message || 'Unable to update interview status.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function getApplicationInterviewDate(applicationId) {
+    const draft = applicationDecisionDrafts[applicationId];
+    if (!draft) return '';
+    return draft.selectedDateOption === 'custom' ? draft.customInterviewDate : draft.selectedDateOption;
+  }
+
+  async function handleApplicationDecision(application, shortlistStatus) {
+    clearStatus();
+
+    if (shortlistStatus === 'shortlisted') {
+      const interviewDate = getApplicationInterviewDate(application.id);
+      if (!interviewDate) {
+        setApplicationMessage(application.id, 'error', 'Please choose an interview date before shortlisting.');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Confirm shortlist for ${application.full_name} on ${formatInterviewDate(interviewDate)}? This will send confirmation emails to the applicant and admin.`
+      );
+
+      if (!confirmed) return;
+    } else {
+      const confirmed = window.confirm(`Confirm rejection for ${application.full_name}?`);
+      if (!confirmed) return;
+    }
+
+    setLoading(true);
+    try {
+      await callAdmin('set-group-iv-application-decision', {
+        id: application.id,
+        shortlistStatus,
+        interviewDate: shortlistStatus === 'shortlisted' ? getApplicationInterviewDate(application.id) : null,
+        adminEmail: ADMIN_EMAIL
+      });
+
+      setApplications((current) =>
+        current.map((item) =>
+          item.id === application.id
+            ? {
+                ...item,
+                shortlist_status: shortlistStatus,
+                interview_date: shortlistStatus === 'shortlisted' ? getApplicationInterviewDate(application.id) : null,
+                interview_status:
+                  shortlistStatus === 'shortlisted' ? item.interview_status ?? 'not-held-yet' : item.interview_status
+              }
+            : item
+        )
+      );
+
+      setApplicationMessage(
+        application.id,
+        'success',
+        shortlistStatus === 'shortlisted'
+          ? 'Candidate shortlisted and confirmation emails sent.'
+          : 'Candidate marked as rejected.'
+      );
+    } catch (err) {
+      setApplicationMessage(
+        application.id,
+        'error',
+        err.message || 'Unable to update application decision.'
+      );
     } finally {
       setLoading(false);
     }
@@ -684,6 +787,11 @@ export default function AdminEventsPage() {
                 {applications.map((application) => {
                   const isOpen = openApplicationId === application.id;
                   const statusMessage = applicationMessages[application.id];
+                  const decisionDraft = applicationDecisionDrafts[application.id] ?? {
+                    selectedDateOption: '2026-08-18',
+                    customInterviewDate: ''
+                  };
+                  const isShortlisted = application.shortlist_status === 'shortlisted';
 
                   return (
                     <article
@@ -712,27 +820,96 @@ export default function AdminEventsPage() {
                         </button>
 
                         <div className="admin-application-actions">
-                          <label className="admin-application-status-picker">
-                            <span>Interview Status</span>
-                            <select
-                              value={application.interview_status}
-                              onChange={(event) =>
-                                handleApplicationStatusChange(application.id, event.target.value)
-                              }
-                              disabled={loading}
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              {INTERVIEW_STATUS_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
+                          {!isShortlisted ? (
+                            <div className="admin-application-decision" onClick={(event) => event.stopPropagation()}>
+                              <div className="admin-application-date-picker">
+                                <span>Interview Date</span>
+                                <div className="admin-application-date-options">
+                                  {INTERVIEW_DATE_OPTIONS.map((option) => (
+                                    <label key={option.value} className="admin-application-date-option">
+                                      <input
+                                        type="radio"
+                                        name={`interview-date-${application.id}`}
+                                        value={option.value}
+                                        checked={decisionDraft.selectedDateOption === option.value}
+                                        onChange={(event) =>
+                                          setApplicationDecisionDrafts((prev) => ({
+                                            ...prev,
+                                            [application.id]: {
+                                              ...decisionDraft,
+                                              selectedDateOption: event.target.value
+                                            }
+                                          }))
+                                        }
+                                        disabled={loading}
+                                      />
+                                      <span>{option.label}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                                {decisionDraft.selectedDateOption === 'custom' ? (
+                                  <input
+                                    type="date"
+                                    min={todayIso}
+                                    value={decisionDraft.customInterviewDate}
+                                    onChange={(event) =>
+                                      setApplicationDecisionDrafts((prev) => ({
+                                        ...prev,
+                                        [application.id]: {
+                                          ...decisionDraft,
+                                          customInterviewDate: event.target.value
+                                        }
+                                      }))
+                                    }
+                                    disabled={loading}
+                                  />
+                                ) : null}
+                              </div>
+                              <div className="admin-application-decision-buttons">
+                                <button
+                                  type="button"
+                                  onClick={() => handleApplicationDecision(application, 'shortlisted')}
+                                  disabled={loading}
+                                >
+                                  Shortlist For Interview
+                                </button>
+                                <button
+                                  type="button"
+                                  className="admin-events-danger"
+                                  onClick={() => handleApplicationDecision(application, 'rejected')}
+                                  disabled={loading}
+                                >
+                                  Reject Candidate
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="admin-application-status-picker">
+                              <span>Interview Status</span>
+                              <select
+                                value={application.interview_status}
+                                onChange={(event) =>
+                                  handleApplicationStatusChange(application.id, event.target.value)
+                                }
+                                disabled={loading}
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                {INTERVIEW_STATUS_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          )}
                           <span
-                            className={`admin-booking-status admin-booking-status--application admin-booking-status--${application.interview_status}`}
+                            className={`admin-booking-status admin-booking-status--application admin-booking-status--${
+                              isShortlisted ? application.interview_status : application.shortlist_status ?? 'pending'
+                            }`}
                           >
-                            {interviewStatusLabel(application.interview_status)}
+                            {isShortlisted
+                              ? interviewStatusLabel(application.interview_status)
+                              : shortlistStatusLabel(application.shortlist_status)}
                           </span>
                         </div>
                       </div>
@@ -766,9 +943,13 @@ export default function AdminEventsPage() {
                           <p><strong>Educational Qualification:</strong> {application.educational_qualification}</p>
                           <p><strong>Community:</strong> {application.community}</p>
                           <p><strong>Mother's Name:</strong> {application.mother_name}</p>
-                          <p><strong>Mother's Occupation:</strong> {application.mother_occupation}</p>
+                          <p><strong>Mother's Occupation:</strong> {application.mother_occupation || 'Not provided'}</p>
                           <p><strong>Father's Name:</strong> {application.father_name}</p>
-                          <p><strong>Father's Occupation:</strong> {application.father_occupation}</p>
+                          <p><strong>Father's Occupation:</strong> {application.father_occupation || 'Not provided'}</p>
+                          <p><strong>Shortlist Decision:</strong> {shortlistStatusLabel(application.shortlist_status)}</p>
+                          {application.interview_date ? (
+                            <p><strong>Interview Date:</strong> {formatInterviewDate(application.interview_date)}</p>
+                          ) : null}
                           <p>
                             <strong>Previous TNPSC Examinations:</strong>{' '}
                             {application.tnpsc_exams?.length ? application.tnpsc_exams.join(', ') : 'None mentioned'}
